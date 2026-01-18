@@ -208,9 +208,6 @@
             try {
                 const response = await fetch(BACKEND_URL, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
                     body: JSON.stringify({ 
                         action: 'buscar_grupao' 
                     })
@@ -268,9 +265,6 @@
             try {
                 const response = await fetch(BACKEND_URL, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
                     body: JSON.stringify({
                         action: 'criar_avaliacao',
                         grupao_id: data.grupao_id,
@@ -313,4 +307,5 @@
     </script>
 </body>
 </html>
+
 
