@@ -178,8 +178,8 @@
         // CONFIGURAÇÕES - ALTERE AQUI COM SUAS CREDENCIAIS
         const ODOO_URL = 'https://ecc-pnscaparecida.odoo.com';
         const DATABASE = 'ecc-pnscaparecida';
-        const USERNAME = 'seu_email@exemplo.com'; // SEU LOGIN DO ODOO
-        const API_KEY = 'SUA_CHAVE_API_AQUI'; // SUA CHAVE DE API
+        const USERNAME = 'ewertonlv@gmail.com'; // SEU LOGIN DO ODOO
+        const API_KEY = '5a38d7f5950608e60a561e5aa09850eb22df60af'; // SUA CHAVE DE API
         
         let grupaoAtivo = null;
         
