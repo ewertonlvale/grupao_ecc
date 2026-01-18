@@ -48,6 +48,7 @@
             font-weight: 600;
             color: #667eea;
             margin-top: 10px;
+            font-size: 1.2rem;
         }
         .grupao-info {
             background: #f8f9fa;
@@ -63,10 +64,16 @@
             font-size: 1.2rem;
             border-radius: 50px;
             transition: all 0.3s;
+            color: white;
         }
         .btn-submit:hover {
             transform: translateY(-3px);
             box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+            color: white;
+        }
+        .btn-submit:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
         }
     </style>
 </head>
@@ -76,10 +83,7 @@
             <div class="col-md-8 col-lg-6">
                 <div class="card">
                     <div class="card-header text-center">
-                        <h1 class="mb-0">
-                            <i class="bi bi-star-fill"></i>
-                            Avaliação do Grupão
-                        </h1>
+                        <h1 class="mb-0">⭐ Avaliação do Grupão</h1>
                         <p class="mb-0 mt-2">ECC - Encontro de Casais com Cristo</p>
                     </div>
                     <div class="card-body p-4">
@@ -96,7 +100,7 @@
                         <!-- Informação do Grupão -->
                         <div id="grupaoInfo" class="grupao-info d-none">
                             <h5><strong>Grupão:</strong></h5>
-                            <p class="mb-0" id="grupaoNome">Carregando...</p>
+                            <p class="mb-0 fs-4" id="grupaoNome">Carregando...</p>
                         </div>
                         
                         <div id="loadingMessage" class="text-center py-4">
@@ -175,21 +179,21 @@
     </div>
 
     <script>
-        // CONFIGURAÇÕES - ALTERE AQUI COM SUAS CREDENCIAIS
-        const ODOO_URL = 'https://ecc-pnscaparecida.odoo.com';
-        const DATABASE = 'ecc-pnscaparecida';
-        const USERNAME = 'ewertonlv@gmail.com'; // SEU LOGIN DO ODOO
-        const API_KEY = '5a38d7f5950608e60a561e5aa09850eb22df60af'; // SUA CHAVE DE API
+        // ========================================
+        // CONFIGURAÇÃO - COLE A URL DO GOOGLE APPS SCRIPT AQUI
+        // ========================================
+        const BACKEND_URL = 'https://script.google.com/home/projects/1262t4PQ7i-V-H3qaTX7dWhEzVG3FeQekGm3zyNRXleFXoVnHCyjghLRp/exec';
+        // Exemplo: 'https://script.google.com/macros/s/AKfycbz.../exec'
         
         let grupaoAtivo = null;
         
         // Labels das avaliações
         const avaliacaoLabels = {
-            '1': 'Muito Ruim',
-            '2': 'Ruim',
-            '3': 'Regular',
-            '4': 'Bom',
-            '5': 'Muito Bom'
+            '1': '⭐ Muito Ruim',
+            '2': '⭐⭐ Ruim',
+            '3': '⭐⭐⭐ Regular',
+            '4': '⭐⭐⭐⭐ Bom',
+            '5': '⭐⭐⭐⭐⭐ Muito Bom'
         };
         
         // Atualizar label quando selecionar estrela
@@ -202,30 +206,13 @@
         // Função para buscar o Grupão ativo
         async function buscarGrupaoAtivo() {
             try {
-                const response = await fetch(`${ODOO_URL}/jsonrpc`, {
+                const response = await fetch(BACKEND_URL, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({
-                        jsonrpc: '2.0',
-                        method: 'call',
-                        params: {
-                            service: 'object',
-                            method: 'execute_kw',
-                            args: [
-                                DATABASE,
-                                2, // UID - ajuste se necessário
-                                API_KEY,
-                                'x_grupao',
-                                'search_read',
-                                [[['x_active', '=', true]]], // Buscar apenas ativos
-                                {
-                                    fields: ['id', 'x_name'],
-                                    limit: 1
-                                }
-                            ]
-                        }
+                    body: JSON.stringify({ 
+                        action: 'buscar_grupao' 
                     })
                 });
 
@@ -240,7 +227,7 @@
                 
             } catch (error) {
                 console.error('Erro ao buscar grupão:', error);
-                mostrarErro('Erro ao carregar informações do Grupão.');
+                mostrarErro('Erro ao carregar informações do Grupão. Verifique se a URL do backend está configurada.');
             }
         }
         
@@ -279,31 +266,17 @@
             submitBtn.textContent = 'Enviando...';
             
             try {
-                const response = await fetch(`${ODOO_URL}/jsonrpc`, {
+                const response = await fetch(BACKEND_URL, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
-                        jsonrpc: '2.0',
-                        method: 'call',
-                        params: {
-                            service: 'object',
-                            method: 'execute_kw',
-                            args: [
-                                DATABASE,
-                                2, // UID
-                                API_KEY,
-                                'x_avaliacao_grupao',
-                                'create',
-                                [{
-                                    x_studio_grupao: parseInt(data.grupao_id),
-                                    x_studio_avaliacao: data.avaliacao,
-                                    x_studio_observacao: data.observacao || '',
-                                    x_name: data.nome_casal || 'Avaliação Anônima'
-                                }]
-                            ]
-                        }
+                        action: 'criar_avaliacao',
+                        grupao_id: data.grupao_id,
+                        avaliacao: data.avaliacao,
+                        observacao: data.observacao || '',
+                        nome_casal: data.nome_casal || ''
                     })
                 });
 
@@ -314,6 +287,7 @@
                     document.getElementById('successMessage').classList.remove('d-none');
                     document.getElementById('errorMessage').classList.add('d-none');
                     document.getElementById('avaliacaoForm').classList.add('d-none');
+                    document.getElementById('grupaoInfo').classList.add('d-none');
                     
                     // Scroll para mensagem de sucesso
                     document.getElementById('successMessage').scrollIntoView({ behavior: 'smooth' });
@@ -324,6 +298,7 @@
                 
             } catch (error) {
                 console.error('Erro:', error);
+                document.getElementById('errorMessage').textContent = '❌ Erro ao enviar avaliação. Verifique sua conexão e tente novamente.';
                 document.getElementById('errorMessage').classList.remove('d-none');
                 document.getElementById('successMessage').classList.add('d-none');
                 
