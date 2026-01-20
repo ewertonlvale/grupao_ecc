@@ -2,163 +2,466 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Atualização Cadastral - ECC</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px 0;
         }
-        
-        body, html {
-            height: 100%;
-            overflow: hidden;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        .card {
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            animation: fadeIn 0.5s;
         }
-        
-        /* Loading Spinner */
-        #loading {
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .card-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px 15px 0 0 !important;
+            padding: 25px;
+        }
+        .section-title {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            border-left: 5px solid #667eea;
+            margin: 30px 0 20px 0;
+            font-weight: 600;
+            color: #667eea;
+        }
+        .section-title:first-of-type { margin-top: 0; }
+        .required::after {
+            content: " *";
+            color: #dc3545;
+        }
+        .form-control:focus, .form-select:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+        .btn-submit {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            padding: 15px 50px;
+            font-size: 1.2rem;
+            border-radius: 50px;
+            color: white;
+            font-weight: 600;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            transition: all 0.3s;
+        }
+        .btn-submit:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.6);
+        }
+        .checkbox-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 5px;
+        }
+        .checkbox-item:hover { background: #e9ecef; }
+        .checkbox-item input {
+            margin-right: 10px;
+            width: 18px;
+            height: 18px;
+        }
+        .loading-overlay {
+            display: none;
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            display: flex;
-            flex-direction: column;
+            background: rgba(0,0,0,0.7);
+            z-index: 9999;
             justify-content: center;
             align-items: center;
-            color: white;
-            z-index: 9999;
-            transition: opacity 0.5s ease;
         }
-        
-        #loading.hide {
-            opacity: 0;
-            pointer-events: none;
-        }
-        
-        .spinner {
-            width: 50px;
-            height: 50px;
-            border: 5px solid rgba(255, 255, 255, 0.3);
-            border-top-color: white;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-        
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-        
-        .loading-text {
-            margin-top: 20px;
-            font-size: 18px;
-            font-weight: 500;
-        }
-        
-        /* Botão Voltar */
-        .back-button {
-            position: fixed;
-            top: 20px;
-            left: 20px;
-            z-index: 1000;
-            background: white;
-            color: #667eea;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 50px;
-            font-size: 16px;
-            font-weight: 600;
+        .loading-overlay.show { display: flex; }
+        .photo-upload {
+            border: 2px dashed #667eea;
+            border-radius: 10px;
+            padding: 30px;
+            text-align: center;
             cursor: pointer;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            background: #f8f9fa;
             transition: all 0.3s;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
         }
-        
-        .back-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
-            background: #667eea;
-            color: white;
+        .photo-upload:hover {
+            border-color: #764ba2;
+            background: #fff;
         }
-        
-        /* iFrame */
-        #appFrame {
-            width: 100%;
-            height: 100%;
-            border: none;
-            display: block;
-            /* Melhorar scroll em mobile */
-            -webkit-overflow-scrolling: touch;
-            overflow: auto;
+        .photo-preview {
+            max-width: 200px;
+            max-height: 200px;
+            border-radius: 10px;
+            margin: 10px auto;
+            display: none;
         }
-        
-        /* Mobile: Garantir scroll suave */
-        @media (max-width: 768px) {
-            body, html {
-                overflow: auto;
-                -webkit-overflow-scrolling: touch;
-            }
-            
-            #appFrame {
-                /* Em mobile, permitir scroll nativo */
-                pointer-events: auto;
-                touch-action: pan-y;
-            }
-        }
+        .photo-preview.show { display: block; }
     </style>
 </head>
 <body>
-    <!-- Loading Spinner -->
-    <div id="loading">
-        <div class="spinner"></div>
-        <div class="loading-text">Carregando Atualização Cadastral...</div>
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="text-center text-white">
+            <div class="spinner-border" style="width: 3rem; height: 3rem;"></div>
+            <p class="mt-3">Carregando...</p>
+        </div>
     </div>
 
-    <!-- Botão Voltar -->
-    <a href="index.html" class="back-button">
-        ← Voltar ao Menu
-    </a>
-    
-    <!-- iFrame Principal -->
-    <iframe 
-        id="appFrame"
-        src="https://script.google.com/macros/s/AKfycbw2LIlqhz-0NBtEebC4KhAwnhu_WLdQIveDqEaDlShu5c7OGTZpDF1rGP-uo_pmTWSp/exec"
-        title="Atualização Cadastral - ECC"
-        allowfullscreen
-        loading="eager"
-    ></iframe>
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-10 col-lg-8">
+                <div class="card">
+                    <div class="card-header text-center">
+                        <h1 class="mb-0">📋 Atualização Cadastral</h1>
+                        <p class="mb-0 mt-2">ECC - Encontro de Casais com Cristo</p>
+                        <p class="mb-0">Paróquia Nossa Senhora da Conceição Aparecida</p>
+                    </div>
+                    
+                    <div class="card-body p-4">
+                        <div id="successMessage" class="alert alert-success d-none">
+                            <h5>✓ Cadastro atualizado com sucesso!</h5>
+                            <p class="mb-0">Suas informações foram salvas!</p>
+                            <hr>
+                            <button class="btn btn-sm btn-success" onclick="location.reload()">Nova Atualização</button>
+                        </div>
+                        
+                        <div id="errorMessage" class="alert alert-danger d-none">
+                            <strong>❌ Erro</strong>
+                            <p class="mb-0 mt-2" id="errorDetails"></p>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <strong>ℹ️ Importante:</strong> Campos com <span class="text-danger">*</span> são obrigatórios.
+                        </div>
+                        
+                        <form id="atualizacaoForm">
+                            <!-- FOTO -->
+                            <div class="section-title">📷 Foto do Casal</div>
+                            
+                            <div class="photo-upload" onclick="document.getElementById('fotoInput').click()">
+                                <input type="file" 
+                                       id="fotoInput" 
+                                       accept="image/*" 
+                                       capture="user"
+                                       style="display:none;">
+                                <div id="uploadText">
+                                    <svg width="48" height="48" fill="currentColor" viewBox="0 0 16 16" style="color:#667eea;">
+                                        <path d="M4.406 1.342A5.53 5.53 0 0 1 8 0c2.69 0 4.923 2 5.166 4.579C14.758 4.804 16 6.137 16 7.773 16 9.569 14.502 11 12.687 11H10a.5.5 0 0 1 0-1h2.688C13.979 10 15 8.988 15 7.773c0-1.216-1.02-2.228-2.313-2.228h-.5v-.5C12.188 2.825 10.328 1 8 1a4.53 4.53 0 0 0-2.941 1.1c-.757.652-1.153 1.438-1.153 2.055v.448l-.445.049C2.064 4.805 1 5.952 1 7.318 1 8.785 2.23 10 3.781 10H6a.5.5 0 0 1 0 1H3.781C1.708 11 0 9.366 0 7.318c0-1.763 1.266-3.223 2.942-3.593.143-.863.698-1.723 1.464-2.383"/>
+                                        <path d="M7.646 4.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 5.707V14.5a.5.5 0 0 1-1 0V5.707L5.354 7.854a.5.5 0 1 1-.708-.708z"/>
+                                    </svg>
+                                    <p class="mb-0 mt-3"><strong>Clique para tirar foto ou enviar</strong></p>
+                                    <small class="text-muted">📸 Câmera ou Galeria | JPG, PNG (máx. 2MB)</small>
+                                </div>
+                                <img id="photoPreview" class="photo-preview">
+                            </div>
+                            
+                            <!-- NOME CASAL -->
+                            <div class="section-title">💑 Identificação do Casal</div>
+                            <div class="mb-3">
+                                <label class="form-label required">Nome do Casal</label>
+                                <input type="text" name="nome_casal" class="form-control" required placeholder="Ex: João e Maria Silva">
+                            </div>
+                            
+                            <!-- MARIDO -->
+                            <div class="section-title">👨 Dados do Marido</div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label required">Nome Completo</label>
+                                    <input type="text" name="marido_nome" class="form-control" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Nome Usual</label>
+                                    <input type="text" name="marido_nome_usual" class="form-control">
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label required">Data de Nascimento</label>
+                                    <input type="date" name="marido_data_nascimento" class="form-control" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label required">Telefone</label>
+                                    <input type="tel" name="marido_telefone" class="form-control telefone" required placeholder="(00) 00000-0000">
+                                </div>
+                            </div>
+                            
+                            <!-- ESPOSA -->
+                            <div class="section-title">👩 Dados da Esposa</div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label required">Nome Completo</label>
+                                    <input type="text" name="esposa_nome" class="form-control" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Nome Usual</label>
+                                    <input type="text" name="esposa_nome_usual" class="form-control">
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label required">Data de Nascimento</label>
+                                    <input type="date" name="esposa_data_nascimento" class="form-control" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label required">Telefone</label>
+                                    <input type="tel" name="esposa_telefone" class="form-control telefone" required placeholder="(00) 00000-0000">
+                                </div>
+                            </div>
+                            
+                            <!-- ENDEREÇO -->
+                            <div class="section-title">📍 Endereço</div>
+                            <div class="row">
+                                <div class="col-md-8 mb-3">
+                                    <label class="form-label required">Rua</label>
+                                    <input type="text" name="rua" class="form-control" required>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label required">Número</label>
+                                    <input type="text" name="numero" class="form-control" required>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label required">Bairro</label>
+                                    <input type="text" name="bairro" class="form-control" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Referência</label>
+                                    <input type="text" name="referencia" class="form-control">
+                                </div>
+                            </div>
+                            
+                            <!-- PASTORAL -->
+                            <div class="section-title">⛪ Informações Pastorais</div>
+                            <div class="mb-3">
+                                <label class="form-label">Comunidade</label>
+                                <select name="comunidade_id" class="form-select" id="comunidadeSelect">
+                                    <option value="">Carregando...</option>
+                                </select>
+                            </div>
+                            
+                            <div class="row mb-3">
+                                <div class="col-md-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="batizado">
+                                        <label class="form-check-label" for="batizado">Batizado</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="primeira_comunhao">
+                                        <label class="form-check-label" for="primeira_comunhao">1ª Comunhão</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="crismado">
+                                        <label class="form-check-label" for="crismado">Crismado</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="casamento_religioso">
+                                        <label class="form-check-label" for="casamento_religioso">Casamento</label>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label required">Data do Casamento</label>
+                                <input type="date" name="data_casamento" class="form-control" required>
+                            </div>
+                            
+                            <!-- HABILIDADES -->
+                            <div class="section-title">🎯 Habilidades</div>
+                            <div class="checkbox-group" id="habilidadesGroup">
+                                <div class="text-center py-3">
+                                    <div class="spinner-border spinner-border-sm text-primary"></div>
+                                    <span class="ms-2">Carregando...</span>
+                                </div>
+                            </div>
+                            
+                            <!-- PASTORAIS -->
+                            <div class="section-title">🙏 Atuação Pastoral</div>
+                            <div class="checkbox-group" id="pastoraisGroup">
+                                <div class="text-center py-3">
+                                    <div class="spinner-border spinner-border-sm text-primary"></div>
+                                    <span class="ms-2">Carregando...</span>
+                                </div>
+                            </div>
+                            
+                            <div class="text-center mt-4">
+                                <button type="submit" class="btn btn-submit">📤 Atualizar Cadastro</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="text-center text-white mt-3">
+                    <small>© 2025 ECC - Paróquia Nossa Senhora da Conceição Aparecida</small>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script>
-        const iframe = document.getElementById('appFrame');
-        const loading = document.getElementById('loading');
+        let imagemBase64 = null;
         
-        // Remover loading quando iframe carregar
-        iframe.addEventListener('load', function() {
-            console.log('✅ Aplicação carregada com sucesso!');
-            setTimeout(function() {
-                loading.classList.add('hide');
-            }, 500);
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 Carregando dados...');
+            mostrarLoading(true);
+            
+            google.script.run
+                .withSuccessHandler(function(lista) {
+                    const select = document.getElementById('comunidadeSelect');
+                    select.innerHTML = '<option value="">Selecione</option>';
+                    lista.forEach(function(c) {
+                        select.innerHTML += `<option value="${c.id}">${c.x_name || c.display_name}</option>`;
+                    });
+                })
+                .buscarComunidades();
+            
+            google.script.run
+                .withSuccessHandler(function(lista) {
+                    const div = document.getElementById('habilidadesGroup');
+                    div.innerHTML = '';
+                    if (lista.length === 0) {
+                        div.innerHTML = '<p class="text-muted">Nenhuma habilidade cadastrada</p>';
+                        return;
+                    }
+                    lista.forEach(function(h) {
+                        div.innerHTML += `
+                            <div class="checkbox-item">
+                                <input type="checkbox" name="habilidades" value="${h.id}" id="hab_${h.id}">
+                                <label for="hab_${h.id}">${h.x_name || h.display_name}</label>
+                            </div>`;
+                    });
+                })
+                .buscarHabilidades();
+            
+            google.script.run
+                .withSuccessHandler(function(lista) {
+                    const div = document.getElementById('pastoraisGroup');
+                    div.innerHTML = '';
+                    if (lista.length === 0) {
+                        div.innerHTML = '<p class="text-muted">Nenhuma pastoral cadastrada</p>';
+                        mostrarLoading(false);
+                        return;
+                    }
+                    lista.forEach(function(p) {
+                        div.innerHTML += `
+                            <div class="checkbox-item">
+                                <input type="checkbox" name="atuacao_pastoral" value="${p.id}" id="past_${p.id}">
+                                <label for="past_${p.id}">${p.x_name || p.display_name}</label>
+                            </div>`;
+                    });
+                    mostrarLoading(false);
+                })
+                .buscarPastorais();
         });
         
-        // Timeout de segurança
-        setTimeout(function() {
-            if (!loading.classList.contains('hide')) {
-                console.warn('⚠️ Loading removido por timeout');
-                loading.classList.add('hide');
+        document.getElementById('fotoInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            if (file.size > 2 * 1024 * 1024) {
+                alert('Imagem deve ter no máximo 2MB');
+                e.target.value = '';
+                return;
             }
-        }, 10000);
+            
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                document.getElementById('photoPreview').src = event.target.result;
+                document.getElementById('photoPreview').classList.add('show');
+                imagemBase64 = event.target.result.split(',')[1];
+                document.getElementById('uploadText').style.display = 'none';
+            };
+            reader.readAsDataURL(file);
+        });
         
-        // Log
-        console.log('🚀 ECC - Atualização Cadastral');
-        console.log('📍 URL da Aplicação: https://script.google.com/macros/s/AKfycbw2LIlqhz-0NBtEebC4KhAwnhu_WLdQIveDqEaDlShu5c7OGTZpDF1rGP-uo_pmTWSp/exec');
+        document.querySelectorAll('.telefone').forEach(function(input) {
+            input.addEventListener('input', function(e) {
+                let v = e.target.value.replace(/\D/g, '');
+                v = v.length <= 10 ? v.replace(/^(\d{2})(\d{4})(\d{0,4}).*/, '($1) $2-$3') : v.replace(/^(\d{2})(\d{5})(\d{0,4}).*/, '($1) $2-$3');
+                e.target.value = v;
+            });
+        });
+        
+        document.getElementById('atualizacaoForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            if (!validarFormulario(e.target)) {
+                alert('Preencha todos os campos obrigatórios');
+                return;
+            }
+            
+            mostrarLoading(true);
+            
+            const formData = new FormData(e.target);
+            const data = {};
+            
+            for (let [key, value] of formData.entries()) {
+                if (key !== 'habilidades' && key !== 'atuacao_pastoral') {
+                    data[key] = value.trim();
+                }
+            }
+            
+            data.habilidades = Array.from(document.querySelectorAll('input[name="habilidades"]:checked')).map(cb => cb.value);
+            data.atuacao_pastoral = Array.from(document.querySelectorAll('input[name="atuacao_pastoral"]:checked')).map(cb => cb.value);
+            data.batizado = document.getElementById('batizado').checked;
+            data.primeira_comunhao = document.getElementById('primeira_comunhao').checked;
+            data.crismado = document.getElementById('crismado').checked;
+            data.casamento_religioso = document.getElementById('casamento_religioso').checked;
+            
+            if (imagemBase64) data.imagem_base64 = imagemBase64;
+            
+            google.script.run
+                .withSuccessHandler(function() {
+                    mostrarLoading(false);
+                    document.getElementById('successMessage').classList.remove('d-none');
+                    document.getElementById('atualizacaoForm').classList.add('d-none');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                })
+                .withFailureHandler(function(error) {
+                    mostrarLoading(false);
+                    document.getElementById('errorDetails').textContent = error.message;
+                    document.getElementById('errorMessage').classList.remove('d-none');
+                })
+                .criarAtualizacaoCadastral(data);
+        });
+        
+        function validarFormulario(form) {
+            let valido = true;
+            form.querySelectorAll('[required]').forEach(function(campo) {
+                if (!campo.value.trim()) {
+                    campo.classList.add('is-invalid');
+                    valido = false;
+                } else {
+                    campo.classList.remove('is-invalid');
+                }
+            });
+            return valido;
+        }
+        
+        function mostrarLoading(show) {
+            document.getElementById('loadingOverlay').classList.toggle('show', show);
+        }
     </script>
 </body>
 </html>
