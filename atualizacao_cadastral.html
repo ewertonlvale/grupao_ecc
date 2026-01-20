@@ -490,6 +490,8 @@
         // INICIALIZAÇÃO
         // ========================================
         window.addEventListener('load', async () => {
+            console.log('🚀 Iniciando carregamento dos dados...');
+            console.log('📍 Backend URL:', BACKEND_URL);
             await carregarDados();
         });
         
@@ -516,6 +518,7 @@
         }
         
         async function carregarHabilidades() {
+            console.log('🎯 Carregando habilidades...');
             try {
                 const response = await fetch(BACKEND_URL, {
                     method: 'POST',
@@ -523,7 +526,10 @@
                     body: JSON.stringify({ action: 'buscar_habilidades' })
                 });
                 
+                console.log('✅ Resposta habilidades:', response.status);
                 const result = await response.json();
+                console.log('📦 Dados habilidades:', result);
+                
                 const habilidades = result.result || [];
                 
                 const container = document.getElementById('habilidadesGroup');
@@ -531,8 +537,11 @@
                 
                 if (habilidades.length === 0) {
                     container.innerHTML = '<p class="text-muted">Nenhuma habilidade cadastrada</p>';
+                    console.log('⚠️ Nenhuma habilidade encontrada');
                     return;
                 }
+                
+                console.log(`✅ ${habilidades.length} habilidades encontradas`);
                 
                 habilidades.forEach(hab => {
                     const div = document.createElement('div');
@@ -547,11 +556,14 @@
                     container.appendChild(div);
                 });
             } catch (error) {
-                console.error('Erro ao carregar habilidades:', error);
+                console.error('❌ Erro ao carregar habilidades:', error);
+                const container = document.getElementById('habilidadesGroup');
+                container.innerHTML = `<p class="text-danger">Erro: ${error.message}</p>`;
             }
         }
         
         async function carregarPastorais() {
+            console.log('🙏 Carregando pastorais...');
             try {
                 const response = await fetch(BACKEND_URL, {
                     method: 'POST',
@@ -559,7 +571,10 @@
                     body: JSON.stringify({ action: 'buscar_pastorais' })
                 });
                 
+                console.log('✅ Resposta pastorais:', response.status);
                 const result = await response.json();
+                console.log('📦 Dados pastorais:', result);
+                
                 const pastorais = result.result || [];
                 
                 const container = document.getElementById('pastoraisGroup');
@@ -567,8 +582,11 @@
                 
                 if (pastorais.length === 0) {
                     container.innerHTML = '<p class="text-muted">Nenhuma pastoral cadastrada</p>';
+                    console.log('⚠️ Nenhuma pastoral encontrada');
                     return;
                 }
+                
+                console.log(`✅ ${pastorais.length} pastorais encontradas`);
                 
                 pastorais.forEach(past => {
                     const div = document.createElement('div');
@@ -583,11 +601,14 @@
                     container.appendChild(div);
                 });
             } catch (error) {
-                console.error('Erro ao carregar pastorais:', error);
+                console.error('❌ Erro ao carregar pastorais:', error);
+                const container = document.getElementById('pastoraisGroup');
+                container.innerHTML = `<p class="text-danger">Erro: ${error.message}</p>`;
             }
         }
         
         async function carregarComunidades() {
+            console.log('⛪ Carregando comunidades...');
             try {
                 const response = await fetch(BACKEND_URL, {
                     method: 'POST',
@@ -595,10 +616,15 @@
                     body: JSON.stringify({ action: 'buscar_comunidades' })
                 });
                 
+                console.log('✅ Resposta comunidades:', response.status);
                 const result = await response.json();
+                console.log('📦 Dados comunidades:', result);
+                
                 const comunidades = result.result || [];
                 
                 const select = document.getElementById('comunidadeSelect');
+                
+                console.log(`✅ ${comunidades.length} comunidades encontradas`);
                 
                 comunidades.forEach(com => {
                     const option = document.createElement('option');
@@ -607,7 +633,7 @@
                     select.appendChild(option);
                 });
             } catch (error) {
-                console.error('Erro ao carregar comunidades:', error);
+                console.error('❌ Erro ao carregar comunidades:', error);
             }
         }
         
