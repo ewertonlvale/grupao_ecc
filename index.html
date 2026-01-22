@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ECC - Paroquial</title>
+    <title>ECC - Sistema Paroquial</title>
     <style>
         * {
             margin: 0;
@@ -24,6 +24,31 @@
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
             padding: 30px 20px;
             text-align: center;
+            position: relative;
+        }
+
+        .login-button {
+            position: absolute;
+            top: 30px;
+            right: 30px;
+            background: linear-gradient(135deg, #228b22, #2d7a4f);
+            color: white;
+            padding: 12px 28px;
+            border-radius: 25px;
+            text-decoration: none;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(34, 139, 34, 0.3);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .login-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(34, 139, 34, 0.4);
+            background: linear-gradient(135deg, #2d7a4f, #228b22);
         }
 
         .header-content {
@@ -168,6 +193,13 @@
 
         /* Responsivo */
         @media (max-width: 768px) {
+            .login-button {
+                position: static;
+                margin-bottom: 20px;
+                font-size: 0.9rem;
+                padding: 10px 24px;
+            }
+
             .header-content {
                 flex-direction: column;
                 gap: 10px;
@@ -258,6 +290,9 @@
 </head>
 <body>
     <div class="header">
+        <a href="https://ecc.pnscaparecida.com" class="login-button">
+            🔐 Login
+        </a>
         <div class="header-content">
             <div class="logo-container">
                 <img src="logo_ecc.png" alt="Logo ECC">
