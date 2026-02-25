@@ -127,6 +127,22 @@
                 touch-action: pan-y;
             }
         }
+
+        @media print {
+            body, html {
+                height: auto;
+                overflow: visible;
+            }
+            .back-button, #loading {
+                display: none;
+            }
+            #appFrame {
+                position: static;
+                width: 100%;
+                height: auto;
+                min-height: 100vh;
+            }
+        }
     </style>
 </head>
 <body>
