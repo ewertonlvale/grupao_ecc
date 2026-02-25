@@ -143,6 +143,31 @@
                 min-height: 100vh;
             }
         }
+
+        /* Botão Imprimir */
+        .print-button {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            background: white;
+            color: #228b22;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 50px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s;
+        }
+        
+        .print-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+            background: #228b22;
+            color: white;
+        }
     </style>
 </head>
 <body>
@@ -156,7 +181,10 @@
     <a href="index.html" class="back-button">
         ← Voltar ao Menu
     </a>
-    
+
+    <button onclick="window.open('https://script.google.com/macros/s/AKfycbwqFGhQvUSipBimgBMZGi6DmOwdj_hWth41z4AbmCq7R_B2WXzKclKt3TaoybTY1fZr/exec?page=calendario', '_blank')" class="print-button">
+        🖨️ Imprimir / PDF
+    </button>
     <!-- iFrame Principal -->
     <iframe 
         id="appFrame"
