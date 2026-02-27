@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <title>Calendário de Eventos - ECC</title>
-
+    <title>Avaliação do Grupão - ECC</title>
+    
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-5VFSZQS0H8"></script>
     <script>
       window.dataLayer = window.dataLayer || [];
@@ -127,66 +127,25 @@
                 touch-action: pan-y;
             }
         }
-
-        @media print {
-            body, html {
-                height: auto;
-                overflow: visible;
-            }
-            .back-button, #loading {
-                display: none;
-            }
-            #appFrame {
-                position: static;
-                width: 100%;
-                height: auto;
-                min-height: 100vh;
-            }
-        }
-
-        /* Botão Imprimir */
-        .print-button {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 1000;
-            background: white;
-            color: #228b22;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 50px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-            transition: all 0.3s;
-        }
-        
-        .print-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
-            background: #228b22;
-            color: white;
-        }
     </style>
 </head>
 <body>
     <!-- Loading Spinner -->
     <div id="loading">
         <div class="spinner"></div>
-        <div class="loading-text">Carregando Calendário de Eventos...</div>
+        <div class="loading-text">Carregando Avaliação do Grupão...</div>
     </div>
 
     <!-- Botão Voltar -->
     <a href="index.html" class="back-button">
         ← Voltar ao Menu
     </a>
-
+    
     <!-- iFrame Principal -->
     <iframe 
         id="appFrame"
-        src="https://script.google.com/macros/s/AKfycbwqFGhQvUSipBimgBMZGi6DmOwdj_hWth41z4AbmCq7R_B2WXzKclKt3TaoybTY1fZr/exec?page=calendario"
-        title="Calendário de Eventos - ECC"
+        src="https://script.google.com/macros/s/AKfycbwqFGhQvUSipBimgBMZGi6DmOwdj_hWth41z4AbmCq7R_B2WXzKclKt3TaoybTY1fZr/exec?page=avaliar"
+        title="Avaliação do Grupão - ECC"
         allowfullscreen
         loading="eager"
     ></iframe>
@@ -212,8 +171,8 @@
         }, 10000);
         
         // Log
-        console.log('🚀 ECC - Calendário de Eventos');
-        console.log('🔗 URL da Aplicação: https://script.google.com/macros/s/AKfycbwqFGhQvUSipBimgBMZGi6DmOwdj_hWth41z4AbmCq7R_B2WXzKclKt3TaoybTY1fZr/exec?page=calendario');
+        console.log('🚀 ECC - Avaliação do Grupão');
+        console.log('📍 URL da Aplicação: https://script.google.com/macros/s/AKfycbwqFGhQvUSipBimgBMZGi6DmOwdj_hWth41z4AbmCq7R_B2WXzKclKt3TaoybTY1fZr/exec?page=avaliar');
     </script>
 </body>
 </html>
