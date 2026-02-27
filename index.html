@@ -10,24 +10,19 @@
     <link rel="shortcut icon" type="image/png" href="favicon.png">
     <link rel="apple-touch-icon" href="favicon.png">
 
-    <!-- Shared CSS (apenas banner LGPD usado aqui) -->
-    <link rel="stylesheet" href="styles/shared.css">
-
     <style>
-        /* Reset já está no shared.css, mas index tem layout próprio */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
             background: linear-gradient(135deg, #1a4d2e 0%, #228b22 50%, #2d7a4f 100%);
             min-height: 100vh;
             display: flex;
             flex-direction: column;
-            /* Override do shared.css para index */
-            overflow: auto;
-        }
-
-        html {
-            overflow: auto;
-            height: auto;
         }
 
         .header {
@@ -169,9 +164,7 @@
             display: inline-block;
         }
 
-        .menu-item:hover .menu-item-icon {
-            transform: scale(1.15) rotate(5deg);
-        }
+        .menu-item:hover .menu-item-icon { transform: scale(1.15) rotate(5deg); }
 
         .menu-item-title {
             font-size: 1.6rem;
@@ -213,6 +206,54 @@
         .footer p { margin: 5px 0; }
         .footer p:first-child { font-weight: 600; font-size: 1rem; }
 
+        /* LGPD Banner */
+        .lgpd-banner {
+            display: none;
+            position: fixed;
+            bottom: 0; left: 0; right: 0;
+            z-index: 10000;
+            background: rgba(26, 77, 46, 0.97);
+            backdrop-filter: blur(10px);
+            color: white;
+            padding: 20px;
+            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
+            animation: slideUp 0.4s ease;
+        }
+
+        .lgpd-banner.show { display: block; }
+
+        @keyframes slideUp {
+            from { transform: translateY(100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .lgpd-content {
+            max-width: 900px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .lgpd-text { flex: 1; min-width: 250px; font-size: 0.9rem; line-height: 1.5; }
+        .lgpd-buttons { display: flex; gap: 10px; flex-shrink: 0; }
+
+        .lgpd-btn {
+            padding: 10px 24px;
+            border-radius: 25px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: all 0.3s;
+        }
+
+        .lgpd-btn-accept { background: white; color: #1a4d2e; }
+        .lgpd-btn-accept:hover { background: #e8f5e8; transform: translateY(-1px); }
+        .lgpd-btn-reject { background: transparent; color: white; border: 2px solid rgba(255,255,255,0.5); }
+        .lgpd-btn-reject:hover { border-color: white; background: rgba(255,255,255,0.1); }
+
         /* Animações */
         @keyframes fadeInUp {
             from { opacity: 0; transform: translateY(40px); }
@@ -236,27 +277,18 @@
             }
 
             .header { text-align: center; }
-
-            .header-content {
-                flex-direction: column;
-                text-align: center;
-                gap: 20px;
-            }
-
+            .header-content { flex-direction: column; text-align: center; gap: 20px; }
             .header-text { text-align: center; }
             .header h1 { font-size: 1.7rem; justify-content: center; }
             .header p { font-size: 0.95rem; }
             .logo-container img { max-width: 100px; }
-
-            .menu {
-                grid-template-columns: 1fr;
-                max-width: 420px;
-            }
-
+            .menu { grid-template-columns: 1fr; max-width: 420px; }
             .menu-item { padding: 35px 25px; }
             .menu-item-icon { font-size: 3.5rem; }
             .menu-item-title { font-size: 1.4rem; }
             .menu-item-description { font-size: 0.95rem; }
+            .lgpd-content { flex-direction: column; text-align: center; }
+            .lgpd-buttons { justify-content: center; width: 100%; }
         }
     </style>
 </head>
@@ -328,11 +360,42 @@
         </div>
     </div>
 
-    <!-- Shared JS (LGPD + Analytics condicional) -->
-    <script src="scripts/shared.js"></script>
-
     <script>
-        console.log('🚀 ECC - Sistema Paroquial v3.0.0');
+        // ========== LGPD + ANALYTICS CONDICIONAL ==========
+        var GA_ID = 'G-5VFSZQS0H8';
+        var LGPD_KEY = 'ecc_lgpd_consent';
+
+        function getConsent() { try { return localStorage.getItem(LGPD_KEY); } catch(e) { return null; } }
+        function setConsent(v) { try { localStorage.setItem(LGPD_KEY, v); } catch(e) {} }
+
+        function loadGA() {
+            if (document.querySelector('script[src*="googletagmanager"]')) return;
+            var s = document.createElement('script'); s.async = true;
+            s.src = 'https://www.googletagmanager.com/gtag/js?id=' + GA_ID;
+            document.head.appendChild(s);
+            window.dataLayer = window.dataLayer || [];
+            function gtag() { window.dataLayer.push(arguments); }
+            window.gtag = gtag; gtag('js', new Date()); gtag('config', GA_ID);
+        }
+
+        function removeGACookies() {
+            ['_ga','_gid','_gat'].forEach(function(n) {
+                document.cookie = n+'=;expires=Thu,01 Jan 1970 00:00:00 UTC;path=/;';
+                document.cookie = n+'=;expires=Thu,01 Jan 1970 00:00:00 UTC;path=/;domain=.'+location.hostname;
+            });
+        }
+
+        var consent = getConsent();
+        if (consent === 'accepted') loadGA();
+        else if (consent === null) setTimeout(function() { document.getElementById('lgpdBanner').classList.add('show'); }, 1000);
+
+        document.getElementById('lgpdAccept').addEventListener('click', function() {
+            setConsent('accepted'); loadGA(); document.getElementById('lgpdBanner').classList.remove('show');
+        });
+
+        document.getElementById('lgpdReject').addEventListener('click', function() {
+            setConsent('rejected'); removeGACookies(); document.getElementById('lgpdBanner').classList.remove('show');
+        });
     </script>
 </body>
 </html>
