@@ -1,0 +1,252 @@
+/* ================================================
+ * SHARED.CSS - Estilos compartilhados ECC
+ * ================================================
+ * Versão: 3.0.0
+ * Usado por: site_cadastro.html, site_avaliar_grupao.html, site_calendario.html
+ * ================================================ */
+
+/* Reset */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body, html {
+    height: 100%;
+    overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+}
+
+/* ========== Loading Spinner ========== */
+#loading {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #1a4d2e 0%, #228b22 50%, #2d7a4f 100%);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    z-index: 9999;
+    transition: opacity 0.5s ease;
+}
+
+#loading.hide {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.spinner {
+    width: 50px;
+    height: 50px;
+    border: 5px solid rgba(255, 255, 255, 0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.loading-text {
+    margin-top: 20px;
+    font-size: 18px;
+    font-weight: 500;
+}
+
+/* ========== Botão Voltar ========== */
+.back-button {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    z-index: 1000;
+    background: white;
+    color: #228b22;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 50px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.back-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+    background: #228b22;
+    color: white;
+}
+
+/* ========== Botão Imprimir (Calendário) ========== */
+.print-button {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1000;
+    background: white;
+    color: #228b22;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 50px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s;
+}
+
+.print-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+    background: #228b22;
+    color: white;
+}
+
+/* ========== iFrame Principal ========== */
+#appFrame {
+    width: 100%;
+    height: 100%;
+    border: none;
+    display: block;
+    -webkit-overflow-scrolling: touch;
+    overflow: auto;
+}
+
+/* ========== Banner LGPD ========== */
+.lgpd-banner {
+    display: none;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 10000;
+    background: rgba(26, 77, 46, 0.97);
+    backdrop-filter: blur(10px);
+    color: white;
+    padding: 20px;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
+    animation: slideUp 0.4s ease;
+}
+
+.lgpd-banner.show {
+    display: block;
+}
+
+@keyframes slideUp {
+    from { transform: translateY(100%); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+.lgpd-content {
+    max-width: 900px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.lgpd-text {
+    flex: 1;
+    min-width: 250px;
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
+.lgpd-text a {
+    color: #90EE90;
+    text-decoration: underline;
+}
+
+.lgpd-buttons {
+    display: flex;
+    gap: 10px;
+    flex-shrink: 0;
+}
+
+.lgpd-btn {
+    padding: 10px 24px;
+    border-radius: 25px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: all 0.3s;
+}
+
+.lgpd-btn-accept {
+    background: white;
+    color: #1a4d2e;
+}
+
+.lgpd-btn-accept:hover {
+    background: #e8f5e8;
+    transform: translateY(-1px);
+}
+
+.lgpd-btn-reject {
+    background: transparent;
+    color: white;
+    border: 2px solid rgba(255, 255, 255, 0.5);
+}
+
+.lgpd-btn-reject:hover {
+    border-color: white;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+/* ========== Mobile ========== */
+@media (max-width: 768px) {
+    body, html {
+        overflow: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    #appFrame {
+        pointer-events: auto;
+        touch-action: pan-y;
+    }
+
+    .lgpd-content {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .lgpd-buttons {
+        justify-content: center;
+        width: 100%;
+    }
+}
+
+/* ========== Print (Calendário) ========== */
+@media print {
+    body, html {
+        height: auto;
+        overflow: visible;
+    }
+
+    .back-button,
+    .print-button,
+    #loading,
+    .lgpd-banner {
+        display: none !important;
+    }
+
+    #appFrame {
+        position: static;
+        width: 100%;
+        height: auto;
+        min-height: 100vh;
+    }
+}
