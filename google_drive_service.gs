@@ -1,239 +1,119 @@
 // ================================================
-// GOOGLE_DRIVE_SERVICE.GS - SERVIÇO DE UPLOAD PARA GOOGLE DRIVE
+// GOOGLE_DRIVE_SERVICE.GS - UPLOAD DE FOTOS
 // ================================================
-// Versão: 1.0.0
-// Funções para salvar imagens no Google Drive e retornar URLs públicas
+// Versão: 2.0.0
+//
+// DEPENDÊNCIA: config.gs (getDrivePastaId)
+//
+// Upload de fotos de casais para Google Drive com URL pública.
+// O ID da pasta é obtido do PropertiesService (DRIVE_PASTA_ID).
 // ================================================
-
-// ID da pasta pública do Google Drive
-const PASTA_FOTOS_ID = '1bMJe6wN3ajozGRCFDR7dQk4j3SQVSEnR';
 
 /**
  * Salva uma imagem no Google Drive
  * @param {string} base64Data - Dados da imagem em base64 (sem prefixo data:image)
- * @param {string} nomeCasal - Nome do casal para o arquivo
- * @returns {Object} Informações do arquivo salvo
+ * @param {string} nomeCasal - Nome do casal para nomear o arquivo
+ * @returns {Object} { success, url, urlDownload, fileId, size }
  */
 function salvarImagemNoDrive(base64Data, nomeCasal) {
   try {
+    const pastaId = getDrivePastaId();
+
     Logger.log('📁 Salvando imagem no Google Drive...');
     Logger.log('👥 Casal: ' + nomeCasal);
-    
+
     // Decodificar base64
     const blob = Utilities.newBlob(
       Utilities.base64Decode(base64Data),
       'image/jpeg',
       gerarNomeArquivo(nomeCasal)
     );
-    
+
     // Obter pasta
-    const pasta = DriveApp.getFolderById(PASTA_FOTOS_ID);
-    
-    // Verificar se já existe uma foto do casal
+    const pasta = DriveApp.getFolderById(pastaId);
+
+    // Remover foto antiga (se existir)
     const arquivosExistentes = pasta.getFilesByName(blob.getName());
     if (arquivosExistentes.hasNext()) {
-      // Deletar foto antiga
       const arquivoAntigo = arquivosExistentes.next();
       Logger.log('🗑️ Removendo foto antiga: ' + arquivoAntigo.getName());
       arquivoAntigo.setTrashed(true);
     }
-    
+
     // Criar novo arquivo
     const arquivo = pasta.createFile(blob);
-    
+
     // Tornar público (qualquer pessoa com o link pode ver)
     arquivo.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-    
-    // Obter URL de visualização direta
+
     const fileId = arquivo.getId();
-    // URL no formato que o Odoo image_url aceita
     const urlVisualizacao = `https://drive.google.com/thumbnail?id=${fileId}&sz=w800`;
     const urlDownload = `https://drive.google.com/uc?export=download&id=${fileId}`;
-    
+
     Logger.log('✅ Imagem salva com sucesso!');
     Logger.log('🔗 URL: ' + urlVisualizacao);
-    
+
     return {
       success: true,
-      fileId: fileId,
-      fileName: arquivo.getName(),
       url: urlVisualizacao,
       urlDownload: urlDownload,
-      size: arquivo.getSize(),
-      mimeType: arquivo.getMimeType(),
-      dateCreated: arquivo.getDateCreated()
+      fileId: fileId,
+      size: arquivo.getSize()
     };
-    
+
   } catch (error) {
-    Logger.log('❌ Erro ao salvar no Drive: ' + error.toString());
-    throw new Error('Erro ao salvar imagem: ' + error.message);
+    Logger.log('❌ Erro ao salvar imagem: ' + error.toString());
+    return {
+      success: false,
+      error: error.message
+    };
   }
 }
 
 /**
- * Gera nome de arquivo único para a foto
+ * Gera nome de arquivo padronizado para a foto do casal
+ * Remove caracteres especiais e acentos
  * @param {string} nomeCasal - Nome do casal
- * @returns {string} Nome do arquivo
+ * @returns {string} Nome do arquivo (ex: "foto_joao_maria.jpg")
  */
 function gerarNomeArquivo(nomeCasal) {
-  // Remover caracteres especiais e espaços
   const nomeNormalizado = nomeCasal
+    .toLowerCase()
     .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '') // Remove acentos
-    .replace(/[^a-zA-Z0-9\s]/g, '')  // Remove caracteres especiais
-    .replace(/\s+/g, '_')             // Substitui espaços por underscore
-    .toLowerCase();
-  
-  // Adicionar timestamp para evitar conflitos
-  const timestamp = new Date().getTime();
-  
-  return `foto_${nomeNormalizado}_${timestamp}.jpg`;
+    .replace(/[\u0300-\u036f]/g, '')   // Remove acentos
+    .replace(/[^a-z0-9\s]/g, '')       // Remove especiais
+    .replace(/\s+/g, '_')              // Espaços → underscores
+    .substring(0, 50);                 // Limitar tamanho
+
+  return `foto_${nomeNormalizado}.jpg`;
 }
 
 /**
- * Lista todas as fotos na pasta
- * @returns {Array} Lista de arquivos
+ * Remove foto de um casal do Google Drive
+ * @param {string} nomeCasal - Nome do casal
+ * @returns {Object} { success, message }
  */
-function listarFotosDrive() {
+function removerFotoCasal(nomeCasal) {
   try {
-    Logger.log('📋 Listando fotos no Drive...');
-    
-    const pasta = DriveApp.getFolderById(PASTA_FOTOS_ID);
-    const arquivos = pasta.getFiles();
-    const listaFotos = [];
-    
-    while (arquivos.hasNext()) {
-      const arquivo = arquivos.next();
-      const fileId = arquivo.getId();
-      
-      listaFotos.push({
-        id: fileId,
-        name: arquivo.getName(),
-        url: `https://drive.google.com/uc?export=view&id=${fileId}`,
-        size: arquivo.getSize(),
-        dateCreated: arquivo.getDateCreated(),
-        mimeType: arquivo.getMimeType()
-      });
-    }
-    
-    Logger.log(`✅ ${listaFotos.length} fotos encontradas`);
-    return listaFotos;
-    
-  } catch (error) {
-    Logger.log('❌ Erro ao listar fotos: ' + error.toString());
-    throw new Error('Erro ao listar fotos: ' + error.message);
-  }
-}
+    const pastaId = getDrivePastaId();
+    const pasta = DriveApp.getFolderById(pastaId);
+    const nomeArquivo = gerarNomeArquivo(nomeCasal);
 
-/**
- * Deleta uma foto do Drive
- * @param {string} fileId - ID do arquivo no Drive
- * @returns {boolean} True se deletado com sucesso
- */
-function deletarFotoDrive(fileId) {
-  try {
-    Logger.log('🗑️ Deletando foto: ' + fileId);
-    
-    const arquivo = DriveApp.getFileById(fileId);
-    arquivo.setTrashed(true);
-    
-    Logger.log('✅ Foto deletada com sucesso');
-    return true;
-    
-  } catch (error) {
-    Logger.log('❌ Erro ao deletar foto: ' + error.toString());
-    throw new Error('Erro ao deletar foto: ' + error.message);
-  }
-}
-
-/**
- * Obtém informações de uma foto
- * @param {string} fileId - ID do arquivo
- * @returns {Object} Informações do arquivo
- */
-function obterInfoFoto(fileId) {
-  try {
-    const arquivo = DriveApp.getFileById(fileId);
-    
-    return {
-      id: fileId,
-      name: arquivo.getName(),
-      url: `https://drive.google.com/uc?export=view&id=${fileId}`,
-      size: arquivo.getSize(),
-      dateCreated: arquivo.getDateCreated(),
-      dateModified: arquivo.getLastUpdated(),
-      mimeType: arquivo.getMimeType(),
-      owners: arquivo.getOwners().map(owner => owner.getEmail())
-    };
-    
-  } catch (error) {
-    Logger.log('❌ Erro ao obter info da foto: ' + error.toString());
-    throw new Error('Erro ao obter informações: ' + error.message);
-  }
-}
-
-/**
- * Testa acesso à pasta do Drive
- * @returns {Object} Status do teste
- */
-function testarAcessoDrive() {
-  try {
-    const pasta = DriveApp.getFolderById(PASTA_FOTOS_ID);
-    const nome = pasta.getName();
-    const arquivos = pasta.getFiles();
-    
-    let contador = 0;
-    while (arquivos.hasNext()) {
-      arquivos.next();
-      contador++;
-    }
-    
-    return {
-      status: 'sucesso',
-      mensagem: 'Acesso OK',
-      pastaNome: nome,
-      pastaId: PASTA_FOTOS_ID,
-      totalArquivos: contador
-    };
-    
-  } catch (error) {
-    return {
-      status: 'erro',
-      mensagem: error.toString()
-    };
-  }
-}
-
-/**
- * Limpa fotos antigas (opcional - usar com cuidado!)
- * @param {number} diasAtras - Remover fotos mais antigas que X dias
- * @returns {number} Quantidade de fotos removidas
- */
-function limparFotosAntigas(diasAtras) {
-  try {
-    Logger.log(`🧹 Limpando fotos com mais de ${diasAtras} dias...`);
-    
-    const pasta = DriveApp.getFolderById(PASTA_FOTOS_ID);
-    const arquivos = pasta.getFiles();
-    const dataLimite = new Date();
-    dataLimite.setDate(dataLimite.getDate() - diasAtras);
-    
+    const arquivos = pasta.getFilesByName(nomeArquivo);
     let removidos = 0;
-    
+
     while (arquivos.hasNext()) {
-      const arquivo = arquivos.next();
-      if (arquivo.getDateCreated() < dataLimite) {
-        arquivo.setTrashed(true);
-        removidos++;
-        Logger.log(`🗑️ Removido: ${arquivo.getName()}`);
-      }
+      arquivos.next().setTrashed(true);
+      removidos++;
     }
-    
-    Logger.log(`✅ ${removidos} fotos antigas removidas`);
-    return removidos;
-    
+
+    return {
+      success: true,
+      message: `${removidos} arquivo(s) removido(s)`
+    };
+
   } catch (error) {
-    Logger.log('❌ Erro ao limpar fotos: ' + error.toString());
-    throw new Error('Erro ao limpar fotos antigas: ' + error.message);
+    Logger.log('❌ Erro ao remover foto: ' + error.toString());
+    return { success: false, error: error.message };
   }
 }

@@ -4,32 +4,30 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ECC - Aparecida</title>
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-5VFSZQS0H8"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-      gtag('config', 'G-5VFSZQS0H8');
-    </script>
-    
+
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="favicon.png">
     <link rel="shortcut icon" type="image/png" href="favicon.png">
-    <link rel="apple-touch-icon" href="favicon.png">  
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+    <link rel="apple-touch-icon" href="favicon.png">
 
+    <!-- Shared CSS (apenas banner LGPD usado aqui) -->
+    <link rel="stylesheet" href="styles/shared.css">
+
+    <style>
+        /* Reset já está no shared.css, mas index tem layout próprio */
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
             background: linear-gradient(135deg, #1a4d2e 0%, #228b22 50%, #2d7a4f 100%);
             min-height: 100vh;
             display: flex;
             flex-direction: column;
+            /* Override do shared.css para index */
+            overflow: auto;
+        }
+
+        html {
+            overflow: auto;
+            height: auto;
         }
 
         .header {
@@ -37,6 +35,7 @@
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
             padding: 30px 20px;
             position: relative;
+            animation: fadeIn 0.8s ease;
         }
 
         .header-content {
@@ -48,9 +47,7 @@
             margin: 0 auto;
         }
 
-        .logo-container {
-            flex-shrink: 0;
-        }
+        .logo-container { flex-shrink: 0; }
 
         .logo-container img {
             max-width: 150px;
@@ -58,9 +55,7 @@
             filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
         }
 
-        .header-text {
-            text-align: center;
-        }
+        .header-text { text-align: center; }
 
         .header h1 {
             color: #228b22;
@@ -140,6 +135,8 @@
             border: 3px solid transparent;
             position: relative;
             overflow: hidden;
+            animation: fadeInUp 0.7s ease forwards;
+            opacity: 0;
         }
 
         .menu-item::before {
@@ -153,15 +150,17 @@
             transition: left 0.5s;
         }
 
-        .menu-item:hover::before {
-            left: 100%;
-        }
+        .menu-item:hover::before { left: 100%; }
 
         .menu-item:hover {
             transform: translateY(-12px) scale(1.02);
             box-shadow: 0 20px 50px rgba(34, 139, 34, 0.3);
             border-color: #228b22;
         }
+
+        .menu-item:nth-child(1) { animation-delay: 0.2s; }
+        .menu-item:nth-child(2) { animation-delay: 0.4s; }
+        .menu-item:nth-child(3) { animation-delay: 0.6s; }
 
         .menu-item-icon {
             font-size: 4.5rem;
@@ -182,9 +181,7 @@
             transition: color 0.3s ease;
         }
 
-        .menu-item:hover .menu-item-title {
-            color: #2d7a4f;
-        }
+        .menu-item:hover .menu-item-title { color: #2d7a4f; }
 
         .menu-item-description {
             color: #555;
@@ -213,13 +210,18 @@
             box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.2);
         }
 
-        .footer p {
-            margin: 5px 0;
+        .footer p { margin: 5px 0; }
+        .footer p:first-child { font-weight: 600; font-size: 1rem; }
+
+        /* Animações */
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(40px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
-        .footer p:first-child {
-            font-weight: 600;
-            font-size: 1rem;
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
         }
 
         /* Responsivo */
@@ -233,9 +235,7 @@
                 padding: 10px 24px;
             }
 
-            .header {
-                text-align: center;
-            }
+            .header { text-align: center; }
 
             .header-content {
                 flex-direction: column;
@@ -243,95 +243,20 @@
                 gap: 20px;
             }
 
-            .header-text {
-                text-align: center;
-            }
-
-            .header h1 {
-                font-size: 1.7rem;
-                justify-content: center;
-            }
-
-            .header p {
-                font-size: 0.95rem;
-            }
-
-            .logo-container img {
-                max-width: 100px;
-            }
+            .header-text { text-align: center; }
+            .header h1 { font-size: 1.7rem; justify-content: center; }
+            .header p { font-size: 0.95rem; }
+            .logo-container img { max-width: 100px; }
 
             .menu {
                 grid-template-columns: 1fr;
                 max-width: 420px;
             }
 
-            .menu-item {
-                padding: 35px 25px;
-            }
-
-            .menu-item-icon {
-                font-size: 3.5rem;
-            }
-
-            .menu-item-title {
-                font-size: 1.4rem;
-            }
-
-            .menu-item-description {
-                font-size: 0.95rem;
-            }
-        }
-
-        /* Animação de entrada */
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(40px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-            }
-            to {
-                opacity: 1;
-            }
-        }
-
-        .header {
-            animation: fadeIn 0.8s ease;
-        }
-
-        .menu-item {
-            animation: fadeInUp 0.7s ease forwards;
-            opacity: 0;
-        }
-
-        .menu-item:nth-child(1) {
-            animation-delay: 0.2s;
-        }
-
-        .menu-item:nth-child(2) {
-            animation-delay: 0.4s;
-        }
-
-        .menu-item:nth-child(3) {
-            animation-delay: 0.6s;
-        }
-
-        /* Efeito de brilho no hover */
-        @keyframes shine {
-            0% {
-                left: -100%;
-            }
-            100% {
-                left: 100%;
-            }
+            .menu-item { padding: 35px 25px; }
+            .menu-item-icon { font-size: 3.5rem; }
+            .menu-item-title { font-size: 1.4rem; }
+            .menu-item-description { font-size: 0.95rem; }
         }
     </style>
 </head>
@@ -387,5 +312,27 @@
         <p>© 2026 ECC - Paróquia Nossa Senhora da Conceição Aparecida</p>
         <p>Todos os direitos reservados | Voltai para mim e eu voltarei vós (Malaquias 3:7)</p>
     </div>
+
+    <!-- Banner LGPD -->
+    <div class="lgpd-banner" id="lgpdBanner">
+        <div class="lgpd-content">
+            <div class="lgpd-text">
+                🍪 Este site utiliza cookies para análise de uso e melhorias.
+                Seus dados não são compartilhados com terceiros.
+                Ao aceitar, você concorda com o uso de cookies de análise.
+            </div>
+            <div class="lgpd-buttons">
+                <button class="lgpd-btn lgpd-btn-accept" id="lgpdAccept">Aceitar</button>
+                <button class="lgpd-btn lgpd-btn-reject" id="lgpdReject">Recusar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Shared JS (LGPD + Analytics condicional) -->
+    <script src="scripts/shared.js"></script>
+
+    <script>
+        console.log('🚀 ECC - Sistema Paroquial v3.0.0');
+    </script>
 </body>
 </html>

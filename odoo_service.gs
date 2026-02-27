@@ -1,43 +1,32 @@
 // ================================================
 // ODOO_SERVICE.GS - SERVIÇO DE INTEGRAÇÃO COM ODOO
 // ================================================
-// Versão: 1.0.0
+// Versão: 2.0.0
 // Funções genéricas para comunicação com Odoo via JSON-RPC
-// ================================================
-
-// ================================================
-// CONFIGURAÇÕES ODOO
-// ================================================
-
-const ODOO_CONFIG = {
-  url: 'https://ecc-pnscaparecida.odoo.com',
-  database: 'ecc-pnscaparecida',
-  uid: 6,
-  apiKey: 'a04215fca15a6ed7a838e40510c681dc05fc23e3'
-};
-
-// ================================================
-// FUNÇÕES GENÉRICAS ODOO
+//
+// DEPENDÊNCIA: config.gs (getOdooConfig())
+//
+// Modelos Odoo utilizados neste projeto:
+//   - x_ficha_cadastral    → Fichas cadastrais de casais
+//   - x_comunidade         → Comunidades paroquiais
+//   - x_habilidades        → Habilidades dos membros
+//   - x_pastorais          → Pastorais/atuação pastoral
+//   - x_grupao             → Grupões (encontros mensais)
+//   - x_avaliacao_grupao   → Avaliações de grupão
+//   - x_calendario         → Eventos do calendário
 // ================================================
 
 /**
- * Busca registros no Odoo (search_read)
- * @param {string} model - Nome do modelo Odoo (ex: 'x_comunidade')
- * @param {Array} fields - Lista de campos a retornar (ex: ['id', 'x_name'])
- * @param {Array} domain - Filtros de busca (ex: [['active', '=', true]])
- * @param {Object} options - Opções adicionais (order, limit, offset)
- * @returns {Array} Lista de registros encontrados
+ * Executa uma chamada JSON-RPC genérica ao Odoo
+ * Centraliza a lógica de request/response para evitar repetição
+ * @param {string} model - Nome do modelo Odoo
+ * @param {string} method - Método a executar (search_read, create, write, unlink)
+ * @param {Array} args - Argumentos do método
+ * @param {Object} kwargs - Argumentos nomeados (opcional)
+ * @returns {*} Resultado da chamada
  */
-function odooSearchRead(model, fields, domain, options) {
-  domain = domain || [];
-  options = options || {};
-  
-  // Configurações padrão
-  const defaultOptions = {
-    order: options.order || 'id asc',
-    limit: options.limit || 100,
-    offset: options.offset || 0
-  };
+function odooExecute(model, method, args, kwargs) {
+  const config = getOdooConfig();
   
   const payload = {
     jsonrpc: '2.0',
@@ -46,211 +35,126 @@ function odooSearchRead(model, fields, domain, options) {
       service: 'object',
       method: 'execute_kw',
       args: [
-        ODOO_CONFIG.database,
-        ODOO_CONFIG.uid,
-        ODOO_CONFIG.apiKey,
+        config.database,
+        config.uid,
+        config.apiKey,
         model,
-        'search_read',
-        [domain],
-        {
-          fields: fields,
-          order: defaultOptions.order,
-          limit: defaultOptions.limit,
-          offset: defaultOptions.offset
-        }
+        method,
+        args || [],
+        kwargs || {}
       ]
     }
   };
-  
+
   try {
-    Logger.log('🔍 Buscando no Odoo - Modelo: ' + model);
-    Logger.log('Filtros: ' + JSON.stringify(domain));
-    
-    const response = UrlFetchApp.fetch(ODOO_CONFIG.url + '/jsonrpc', {
+    const response = UrlFetchApp.fetch(config.url + '/jsonrpc', {
       method: 'post',
       contentType: 'application/json',
       payload: JSON.stringify(payload),
       muteHttpExceptions: true
     });
-    
+
     const result = JSON.parse(response.getContentText());
-    
-    // Verificar se houve erro
+
     if (result.error) {
-      Logger.log('❌ Erro Odoo: ' + JSON.stringify(result.error));
-      throw new Error(result.error.data?.message || result.error.message || 'Erro ao buscar dados do Odoo');
+      const errorMsg = result.error.data?.message || result.error.message || 'Erro desconhecido do Odoo';
+      Logger.log(`❌ Erro Odoo [${model}.${method}]: ${errorMsg}`);
+      throw new Error(errorMsg);
     }
-    
-    Logger.log('✅ Registros encontrados: ' + (result.result?.length || 0));
-    return result.result || [];
-    
+
+    return result.result;
+
   } catch (error) {
-    Logger.log('❌ Erro completo: ' + error.toString());
-    throw error;
+    if (error.message && error.message.includes('Erro')) {
+      throw error; // Re-throw erros do Odoo já formatados
+    }
+    Logger.log(`❌ Erro de conexão [${model}.${method}]: ${error.toString()}`);
+    throw new Error(`Falha na comunicação com o Odoo: ${error.message}`);
   }
+}
+
+/**
+ * Busca registros no Odoo (search_read)
+ * @param {string} model - Nome do modelo Odoo
+ * @param {Array} fields - Campos a retornar
+ * @param {Array} [domain=[]] - Filtros de busca
+ * @param {Object} [options={}] - Opções (order, limit, offset)
+ * @returns {Array} Lista de registros
+ */
+function odooSearchRead(model, fields, domain, options) {
+  domain = domain || [];
+  options = options || {};
+
+  const kwargs = {
+    fields: fields,
+    order: options.order || 'id asc',
+    limit: options.limit || 100,
+    offset: options.offset || 0
+  };
+
+  Logger.log(`🔍 Buscando: ${model} | Filtros: ${JSON.stringify(domain)} | Limite: ${kwargs.limit}`);
+
+  const result = odooExecute(model, 'search_read', [domain], kwargs);
+
+  Logger.log(`✅ Encontrados: ${result ? result.length : 0} registros`);
+  return result || [];
 }
 
 /**
  * Cria um novo registro no Odoo
  * @param {string} model - Nome do modelo Odoo
- * @param {Object} data - Dados do registro a ser criado
+ * @param {Object} data - Dados do novo registro
  * @returns {number} ID do registro criado
  */
 function odooCreate(model, data) {
-  const payload = {
-    jsonrpc: '2.0',
-    method: 'call',
-    params: {
-      service: 'object',
-      method: 'execute_kw',
-      args: [
-        ODOO_CONFIG.database,
-        ODOO_CONFIG.uid,
-        ODOO_CONFIG.apiKey,
-        model,
-        'create',
-        [data]
-      ]
-    }
-  };
-  
-  try {
-    Logger.log('➕ Criando registro no Odoo - Modelo: ' + model);
-    Logger.log('Dados: ' + JSON.stringify(data));
-    
-    const response = UrlFetchApp.fetch(ODOO_CONFIG.url + '/jsonrpc', {
-      method: 'post',
-      contentType: 'application/json',
-      payload: JSON.stringify(payload),
-      muteHttpExceptions: true
-    });
-    
-    const result = JSON.parse(response.getContentText());
-    
-    // Verificar se houve erro
-    if (result.error) {
-      Logger.log('❌ Erro Odoo: ' + JSON.stringify(result.error));
-      throw new Error(result.error.data?.message || result.error.message || 'Erro ao criar registro no Odoo');
-    }
-    
-    Logger.log('✅ Registro criado com ID: ' + result.result);
-    return result.result;
-    
-  } catch (error) {
-    Logger.log('❌ Erro completo: ' + error.toString());
-    throw error;
-  }
+  Logger.log(`➕ Criando registro: ${model}`);
+  Logger.log(`📋 Dados: ${JSON.stringify(data)}`);
+
+  const result = odooExecute(model, 'create', [data]);
+
+  Logger.log(`✅ Registro criado com ID: ${result}`);
+  return result;
 }
 
 /**
  * Atualiza um registro existente no Odoo
  * @param {string} model - Nome do modelo Odoo
- * @param {number} recordId - ID do registro a atualizar
- * @param {Object} data - Dados a serem atualizados
- * @returns {boolean} True se atualizado com sucesso
+ * @param {number} recordId - ID do registro
+ * @param {Object} data - Dados a atualizar
+ * @returns {boolean} True se sucesso
  */
 function odooWrite(model, recordId, data) {
-  const payload = {
-    jsonrpc: '2.0',
-    method: 'call',
-    params: {
-      service: 'object',
-      method: 'execute_kw',
-      args: [
-        ODOO_CONFIG.database,
-        ODOO_CONFIG.uid,
-        ODOO_CONFIG.apiKey,
-        model,
-        'write',
-        [[recordId], data]
-      ]
-    }
-  };
-  
-  try {
-    Logger.log('✏️ Atualizando registro no Odoo - Modelo: ' + model + ', ID: ' + recordId);
-    Logger.log('Dados: ' + JSON.stringify(data));
-    
-    const response = UrlFetchApp.fetch(ODOO_CONFIG.url + '/jsonrpc', {
-      method: 'post',
-      contentType: 'application/json',
-      payload: JSON.stringify(payload),
-      muteHttpExceptions: true
-    });
-    
-    const result = JSON.parse(response.getContentText());
-    
-    if (result.error) {
-      Logger.log('❌ Erro Odoo: ' + JSON.stringify(result.error));
-      throw new Error(result.error.data?.message || result.error.message || 'Erro ao atualizar registro no Odoo');
-    }
-    
-    Logger.log('✅ Registro atualizado com sucesso');
-    return result.result;
-    
-  } catch (error) {
-    Logger.log('❌ Erro completo: ' + error.toString());
-    throw error;
-  }
+  Logger.log(`✏️ Atualizando: ${model} ID ${recordId}`);
+
+  const result = odooExecute(model, 'write', [[recordId], data]);
+
+  Logger.log('✅ Registro atualizado');
+  return result;
 }
 
 /**
  * Deleta um registro do Odoo
  * @param {string} model - Nome do modelo Odoo
- * @param {number} recordId - ID do registro a deletar
- * @returns {boolean} True se deletado com sucesso
+ * @param {number} recordId - ID do registro
+ * @returns {boolean} True se sucesso
  */
 function odooUnlink(model, recordId) {
-  const payload = {
-    jsonrpc: '2.0',
-    method: 'call',
-    params: {
-      service: 'object',
-      method: 'execute_kw',
-      args: [
-        ODOO_CONFIG.database,
-        ODOO_CONFIG.uid,
-        ODOO_CONFIG.apiKey,
-        model,
-        'unlink',
-        [[recordId]]
-      ]
-    }
-  };
-  
-  try {
-    Logger.log('🗑️ Deletando registro no Odoo - Modelo: ' + model + ', ID: ' + recordId);
-    
-    const response = UrlFetchApp.fetch(ODOO_CONFIG.url + '/jsonrpc', {
-      method: 'post',
-      contentType: 'application/json',
-      payload: JSON.stringify(payload),
-      muteHttpExceptions: true
-    });
-    
-    const result = JSON.parse(response.getContentText());
-    
-    if (result.error) {
-      Logger.log('❌ Erro Odoo: ' + JSON.stringify(result.error));
-      throw new Error(result.error.data?.message || result.error.message || 'Erro ao deletar registro no Odoo');
-    }
-    
-    Logger.log('✅ Registro deletado com sucesso');
-    return result.result;
-    
-  } catch (error) {
-    Logger.log('❌ Erro completo: ' + error.toString());
-    throw error;
-  }
+  Logger.log(`🗑️ Deletando: ${model} ID ${recordId}`);
+
+  const result = odooExecute(model, 'unlink', [[recordId]]);
+
+  Logger.log('✅ Registro deletado');
+  return result;
 }
 
 /**
- * Verifica conexão com Odoo
+ * Verifica conexão com o Odoo
  * @returns {Object} Status da conexão
  */
 function testarConexaoOdoo() {
   try {
-    // Tentar buscar versão do Odoo
+    const config = getOdooConfig();
+
     const payload = {
       jsonrpc: '2.0',
       method: 'call',
@@ -259,34 +163,23 @@ function testarConexaoOdoo() {
         method: 'version'
       }
     };
-    
-    const response = UrlFetchApp.fetch(ODOO_CONFIG.url + '/jsonrpc', {
+
+    const response = UrlFetchApp.fetch(config.url + '/jsonrpc', {
       method: 'post',
       contentType: 'application/json',
       payload: JSON.stringify(payload),
       muteHttpExceptions: true
     });
-    
+
     const result = JSON.parse(response.getContentText());
-    
+
     if (result.error) {
-      return {
-        status: 'erro',
-        mensagem: 'Erro ao conectar com Odoo',
-        erro: result.error
-      };
+      return { status: 'erro', mensagem: 'Erro ao conectar', erro: result.error };
     }
-    
-    return {
-      status: 'sucesso',
-      mensagem: 'Conexão OK',
-      versao: result.result
-    };
-    
+
+    return { status: 'sucesso', mensagem: 'Conexão OK', versao: result.result };
+
   } catch (error) {
-    return {
-      status: 'erro',
-      mensagem: error.toString()
-    };
+    return { status: 'erro', mensagem: error.toString() };
   }
 }
