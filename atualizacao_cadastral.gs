@@ -233,8 +233,19 @@ function criarAtualizacaoCadastral(formData) {
     };
 
     // Comunidade (Many2one)
-    if (formData.comunidade) {
-      recordData.x_studio_comunidade = parseInt(formData.comunidade);
+    const comunidadeId = formData.comunidade || formData.comunidade_id;
+    if (comunidadeId) {
+       recordData.x_studio_comunidade = parseInt(comunidadeId);
+    }
+
+    // Círculo Ativo
+    if (formData.circulo_ativo) {
+      recordData.x_studio_circulo_ativo = formData.circulo_ativo; // "Sim" ou "Não"
+    }
+
+    // Temário
+    if (formData.temario) {
+      recordData.x_studio_temario = formData.temario.trim();
     }
 
     // Habilidades (Many2many)

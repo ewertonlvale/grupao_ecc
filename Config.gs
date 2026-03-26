@@ -176,7 +176,7 @@ const ODOO_MODELS = {
   HABILIDADES_ALT: 'x_habilidade',
   
   // Modelo de pastorais/atuação pastoral
-  PASTORAIS: 'x_pastorais',
+  PASTORAIS: 'x_pastoral',
   PASTORAIS_ALT: 'x_pastoral',
   
   // Modelo de grupões (encontros mensais)
