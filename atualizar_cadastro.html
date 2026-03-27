@@ -278,7 +278,7 @@
                             </div>
 
                             <!-- MARIDO -->
-                            <div class="section-title">👨 Dados do Maridooooooooooooo</div>
+                            <div class="section-title">👨 Dados do Marido</div>
                             
                             <div class="row">
                                 <div class="col-md-6 mb-3">
@@ -578,7 +578,16 @@
     </div>
 
     <script>
-        let imagemBase64 = null;
+        // ========================================
+        // ESTADO DA FOTO
+        // ========================================
+        // Fluxo novo: foto é enviada ao Drive imediatamente
+        // e no submit, só vai a URL + fileId (sem base64 pesado)
+        
+        var imagemBase64 = null;       // Fallback legado (usado se upload antecipado falhar)
+        var fotoUrlDrive = null;       // URL da foto já salva no Drive
+        var fotoFileIdDrive = null;    // fileId da foto já salva no Drive
+        var fotoUploadEmAndamento = false;  // Controle para evitar submit durante upload
 
         document.addEventListener('DOMContentLoaded', function() {
             console.log('🚀 Carregando dados...');
@@ -586,35 +595,34 @@
 
             google.script.run
                 .withSuccessHandler(function(lista) {
-                    const select = document.getElementById('comunidadeSelect');
+                    var select = document.getElementById('comunidadeSelect');
                     select.innerHTML = '<option value="">Selecione</option>';
                     lista.forEach(function(c) {
-                        select.innerHTML += `<option value="${c.id}">${c.x_name || c.display_name}</option>`;
+                        select.innerHTML += '<option value="' + c.id + '">' + (c.x_name || c.display_name) + '</option>';
                     });
                 })
                 .buscarComunidades();
             
             google.script.run
                 .withSuccessHandler(function(lista) {
-                    const div = document.getElementById('habilidadesGroup');
+                    var div = document.getElementById('habilidadesGroup');
                     div.innerHTML = '';
                     if (lista.length === 0) {
                         div.innerHTML = '<p class="text-muted">Nenhuma habilidade cadastrada</p>';
                         return;
                     }
                     lista.forEach(function(h) {
-                        div.innerHTML += `
-                            <div class="checkbox-item">
-                                <input type="checkbox" name="habilidades" value="${h.id}" id="hab_${h.id}">
-                                <label for="hab_${h.id}">${h.x_name || h.display_name}</label>
-                            </div>`;
+                        div.innerHTML += '<div class="checkbox-item">' +
+                            '<input type="checkbox" name="habilidades" value="' + h.id + '" id="hab_' + h.id + '">' +
+                            '<label for="hab_' + h.id + '">' + (h.x_name || h.display_name) + '</label>' +
+                            '</div>';
                     });
                 })
                 .buscarHabilidades();
             
             google.script.run
                 .withSuccessHandler(function(lista) {
-                    const div = document.getElementById('pastoraisGroup');
+                    var div = document.getElementById('pastoraisGroup');
                     div.innerHTML = '';
                     if (lista.length === 0) {
                         div.innerHTML = '<p class="text-muted">Nenhuma pastoral cadastrada</p>';
@@ -622,11 +630,10 @@
                         return;
                     }
                     lista.forEach(function(p) {
-                        div.innerHTML += `
-                            <div class="checkbox-item">
-                                <input type="checkbox" name="atuacao_pastoral" value="${p.id}" id="past_${p.id}">
-                                <label for="past_${p.id}">${p.x_name || p.display_name}</label>
-                            </div>`;
+                        div.innerHTML += '<div class="checkbox-item">' +
+                            '<input type="checkbox" name="atuacao_pastoral" value="' + p.id + '" id="past_' + p.id + '">' +
+                            '<label for="past_' + p.id + '">' + (p.x_name || p.display_name) + '</label>' +
+                            '</div>';
                     });
                     mostrarLoading(false);
                 })
@@ -635,6 +642,7 @@
         
         // ========================================
         // PROCESSAMENTO DE IMAGEM COM SUPORTE HEIC
+        // E UPLOAD ANTECIPADO PARA O DRIVE
         // ========================================
         
         // Processar foto da câmera
@@ -649,8 +657,6 @@
 
         /**
          * Detecta se o arquivo é HEIC/HEIF
-         * Verifica pelo MIME type e também pela extensão (alguns navegadores
-         * Android reportam MIME incorreto para HEIC)
          */
         function isHeic(file) {
             var type = (file.type || '').toLowerCase();
@@ -662,21 +668,25 @@
         }
 
         /**
-         * Processa a imagem com suporte a HEIC
-         * Se for HEIC/HEIF, converte para JPEG via heic2any antes de carregar.
-         * Para outros formatos, carrega direto via FileReader.
+         * Processa a imagem com suporte a HEIC.
+         * Se HEIC, converte para JPEG via heic2any.
+         * Em seguida, faz upload antecipado para o Drive.
          */
         function processarFoto(file) {
             if (!file) return;
             
             console.log('📷 Processando imagem:', file.name, 'Tipo:', file.type, 'Tamanho:', (file.size / 1024).toFixed(2) + 'KB');
             
+            // Resetar estado anterior
+            fotoUrlDrive = null;
+            fotoFileIdDrive = null;
+            imagemBase64 = null;
+
             // Mostrar indicador
             var indicator = document.getElementById('compressionIndicator');
             indicator.classList.add('show');
 
             if (isHeic(file)) {
-                // HEIC detectado — converter para JPEG
                 console.log('🔄 Imagem HEIC detectada, convertendo para JPEG...');
                 document.getElementById('compressionText').textContent = '🔄 Convertendo imagem (HEIC → JPEG)...';
 
@@ -687,28 +697,25 @@
                 })
                 .then(function(blobJpeg) {
                     console.log('✅ HEIC convertido para JPEG:', (blobJpeg.size / 1024).toFixed(2) + 'KB');
-                    carregarImagemDoBlob(blobJpeg, file.size);
+                    carregarEEnviarFoto(blobJpeg, file.size);
                 })
                 .catch(function(error) {
                     console.error('❌ Erro ao converter HEIC:', error);
                     document.getElementById('compressionText').innerHTML = '❌ Erro ao processar imagem. Tente tirar a foto pela câmera.';
-                    setTimeout(function() {
-                        indicator.classList.remove('show');
-                    }, 5000);
+                    setTimeout(function() { indicator.classList.remove('show'); }, 5000);
                 });
             } else {
-                // Formato padrão (JPG, PNG, WEBP) — carregar direto
                 document.getElementById('compressionText').textContent = 'Carregando imagem...';
-                carregarImagemDoBlob(file, file.size);
+                carregarEEnviarFoto(file, file.size);
             }
         }
 
         /**
-         * Carrega um Blob/File como base64 e atualiza o preview
-         * @param {Blob|File} blob - Imagem já em formato compatível
-         * @param {number} tamanhoOriginal - Tamanho original do arquivo para exibição
+         * Carrega preview da imagem e faz upload antecipado para o Drive
+         * @param {Blob|File} blob - Imagem em formato compatível
+         * @param {number} tamanhoOriginal - Tamanho original do arquivo
          */
-        function carregarImagemDoBlob(blob, tamanhoOriginal) {
+        function carregarEEnviarFoto(blob, tamanhoOriginal) {
             var indicator = document.getElementById('compressionIndicator');
             var reader = new FileReader();
 
@@ -717,36 +724,63 @@
                 document.getElementById('photoPreview').src = event.target.result;
                 document.getElementById('photoPreview').style.display = 'block';
                 
-                // Remover prefixo data:image para obter apenas o base64
-                imagemBase64 = event.target.result.split(',')[1];
+                // Extrair base64 puro (sem prefixo data:image)
+                var base64Puro = event.target.result.split(',')[1];
                 
-                // Atualizar indicador com tamanho final
-                var tamanhoFinalKB = (blob.size / 1024).toFixed(2);
-                var tamanhoOriginalKB = (tamanhoOriginal / 1024).toFixed(2);
+                // Guardar base64 como fallback (caso upload antecipado falhe)
+                imagemBase64 = base64Puro;
 
-                if (blob.size !== tamanhoOriginal) {
-                    // Foi convertido (HEIC → JPEG)
-                    document.getElementById('compressionText').innerHTML = 
-                        '✅ Imagem carregada: ' + tamanhoFinalKB + 'KB (convertida de ' + tamanhoOriginalKB + 'KB HEIC)';
-                } else {
-                    document.getElementById('compressionText').innerHTML = 
-                        '✅ Imagem carregada: ' + tamanhoFinalKB + 'KB';
-                }
+                var tamanhoFinalKB = (blob.size / 1024).toFixed(2);
+
+                // Atualizar indicador → agora fazendo upload
+                document.getElementById('compressionText').innerHTML = 
+                    '☁️ Enviando foto para o servidor... (' + tamanhoFinalKB + 'KB)';
                 
-                console.log('✅ Imagem pronta para envio:', tamanhoFinalKB + 'KB');
-                
-                // Esconder indicador após 3 segundos
-                setTimeout(function() {
-                    indicator.classList.remove('show');
-                }, 3000);
+                console.log('☁️ Iniciando upload antecipado para o Drive...');
+                fotoUploadEmAndamento = true;
+
+                // Upload antecipado para o Drive
+                google.script.run
+                    .withSuccessHandler(function(resultado) {
+                        fotoUploadEmAndamento = false;
+
+                        if (resultado && resultado.success) {
+                            fotoUrlDrive = resultado.url;
+                            fotoFileIdDrive = resultado.fileId;
+                            // Limpar base64 — não será mais necessário no submit
+                            imagemBase64 = null;
+
+                            var msg = '✅ Foto salva! (' + tamanhoFinalKB + 'KB)';
+                            if (blob.size !== tamanhoOriginal) {
+                                msg = '✅ Foto salva! (' + tamanhoFinalKB + 'KB, convertida de HEIC)';
+                            }
+                            document.getElementById('compressionText').innerHTML = msg;
+                            console.log('✅ Upload antecipado concluído:', resultado.fileId, resultado.url);
+                        } else {
+                            // Upload falhou — mantém base64 como fallback
+                            console.warn('⚠️ Upload antecipado falhou, será enviado no submit:', resultado);
+                            document.getElementById('compressionText').innerHTML = 
+                                '✅ Imagem carregada: ' + tamanhoFinalKB + 'KB (será enviada com o formulário)';
+                        }
+
+                        setTimeout(function() { indicator.classList.remove('show'); }, 3000);
+                    })
+                    .withFailureHandler(function(error) {
+                        fotoUploadEmAndamento = false;
+                        // Upload falhou — mantém base64 como fallback
+                        console.error('⚠️ Erro no upload antecipado, será enviado no submit:', error);
+                        var tamanhoKB = (blob.size / 1024).toFixed(2);
+                        document.getElementById('compressionText').innerHTML = 
+                            '✅ Imagem carregada: ' + tamanhoKB + 'KB (será enviada com o formulário)';
+                        setTimeout(function() { indicator.classList.remove('show'); }, 3000);
+                    })
+                    .salvarFotoAntecipada(base64Puro);
             };
 
             reader.onerror = function(error) {
                 console.error('❌ Erro ao ler imagem:', error);
                 document.getElementById('compressionText').innerHTML = '❌ Erro ao carregar imagem. Tente novamente.';
-                setTimeout(function() {
-                    indicator.classList.remove('show');
-                }, 5000);
+                setTimeout(function() { indicator.classList.remove('show'); }, 5000);
             };
 
             reader.readAsDataURL(blob);
@@ -790,19 +824,27 @@
                 return;
             }
 
+            // Se upload da foto ainda está em andamento, aguardar
+            if (fotoUploadEmAndamento) {
+                alert('Aguarde o envio da foto terminar antes de enviar o formulário.');
+                return;
+            }
+
             mostrarLoading(true);
             
-            const formData = new FormData(e.target);
-            const data = {};
+            var formData = new FormData(e.target);
+            var data = {};
 
-            for (let [key, value] of formData.entries()) {
+            for (var pair of formData.entries()) {
+                var key = pair[0];
+                var value = pair[1];
                 if (key !== 'habilidades' && key !== 'atuacao_pastoral') {
                     data[key] = (value && typeof value === 'string') ? value.trim() : value;
                 }
             }
             
-            data.habilidades = Array.from(document.querySelectorAll('input[name="habilidades"]:checked')).map(cb => cb.value);
-            data.atuacao_pastoral = Array.from(document.querySelectorAll('input[name="atuacao_pastoral"]:checked')).map(cb => cb.value);
+            data.habilidades = Array.from(document.querySelectorAll('input[name="habilidades"]:checked')).map(function(cb) { return cb.value; });
+            data.atuacao_pastoral = Array.from(document.querySelectorAll('input[name="atuacao_pastoral"]:checked')).map(function(cb) { return cb.value; });
             
             // Sacramentos individuais (BOOLEAN)
             data.marido_batizado = document.getElementById('marido_batizado').checked;
@@ -820,27 +862,33 @@
             data.fez_etapa_3 = document.querySelector('input[name="fez_etapa_3"]:checked').value === 'true';
             
             // Círculo Ativo
-            const circuloAtivo = document.querySelector('input[name="circulo_ativo"]:checked');
+            var circuloAtivo = document.querySelector('input[name="circulo_ativo"]:checked');
             if (circuloAtivo) {
                 data.circulo_ativo = circuloAtivo.value;
             }
             
             // Temário
-            const temarioSelect = document.querySelector('select[name="temario"]');
+            var temarioSelect = document.querySelector('select[name="temario"]');
             if (temarioSelect && temarioSelect.value) {
                 data.temario = temarioSelect.value;
             }
             
-            // Incluir imagem se houver
-            if (imagemBase64) {
+            // ========== FOTO: escolher fluxo ==========
+            if (fotoUrlDrive && fotoFileIdDrive) {
+                // Fluxo novo: foto já está no Drive, enviar só URL + fileId
+                data.url_foto = fotoUrlDrive;
+                data.foto_file_id = fotoFileIdDrive;
+                console.log('📷 Foto pré-enviada: fileId=' + fotoFileIdDrive);
+            } else if (imagemBase64) {
+                // Fluxo legado: enviar base64 (upload antecipado falhou)
                 data.imagem_base64 = imagemBase64;
-                console.log('📷 Imagem incluída no envio (tamanho base64):', imagemBase64.length, 'caracteres');
+                console.log('📷 Foto via base64 (fallback): ' + imagemBase64.length + ' caracteres');
             }
             
             // Converter datas de DD/MM/AAAA para YYYY-MM-DD
             function converterData(dataStr) {
                 if (!dataStr || dataStr.length !== 10) return dataStr;
-                const partes = dataStr.split('/');
+                var partes = dataStr.split('/');
                 if (partes.length !== 3) return dataStr;
                 return partes[2] + '-' + partes[1] + '-' + partes[0];
             }
@@ -849,7 +897,7 @@
             data.esposa_data_nascimento = converterData(data.esposa_data_nascimento);
             data.data_casamento = converterData(data.data_casamento);
 
-            console.log('📤 Enviando dados:', data);
+            console.log('📤 Enviando dados (sem base64 no log):', Object.keys(data));
 
             google.script.run
                 .withSuccessHandler(function(response) {
@@ -870,7 +918,7 @@
         });
 
         function validarFormulario(form) {
-            let valido = true;
+            var valido = true;
             form.querySelectorAll('[required]').forEach(function(campo) {
                 if (!campo.value.trim()) {
                     campo.classList.add('is-invalid');
@@ -887,9 +935,9 @@
         }
 
         function toggleDataCasamento() {
-            const radioSim = document.getElementById('casamento_sim');
-            const campoData = document.getElementById('campo_data_casamento');
-            const inputData = document.getElementById('input_data_casamento');
+            var radioSim = document.getElementById('casamento_sim');
+            var campoData = document.getElementById('campo_data_casamento');
+            var inputData = document.getElementById('input_data_casamento');
             if (radioSim.checked) {
                 campoData.style.display = 'block';
             } else {
@@ -899,9 +947,9 @@
         }
 
         function toggleCampoEtapa(etapa) {
-            const radioSim = document.getElementById(`fez_etapa_${etapa}_sim`);
-            const campoEncontro = document.getElementById(`campo_encontro_${etapa}`);
-            const inputEncontro = document.getElementById(`input_encontro_${etapa}`);
+            var radioSim = document.getElementById('fez_etapa_' + etapa + '_sim');
+            var campoEncontro = document.getElementById('campo_encontro_' + etapa);
+            var inputEncontro = document.getElementById('input_encontro_' + etapa);
             if (radioSim.checked) {
                 campoEncontro.style.display = 'block';
             } else {
@@ -912,15 +960,20 @@
 
         function novaAtualizacao() {
             document.getElementById('successMessage').classList.add('d-none');
-            const form = document.getElementById('atualizacaoForm');
+            var form = document.getElementById('atualizacaoForm');
             form.classList.remove('d-none');
             form.reset();
-            const preview = document.getElementById('photoPreview');
+            var preview = document.getElementById('photoPreview');
             if (preview) {
                 preview.src = '';
                 preview.style.display = 'none';
             }
+            // Resetar estado da foto
             imagemBase64 = null;
+            fotoUrlDrive = null;
+            fotoFileIdDrive = null;
+            fotoUploadEmAndamento = false;
+            
             document.getElementById('casamento_nao').checked = true;
             document.getElementById('fez_etapa_2_nao').checked = true;
             document.getElementById('fez_etapa_3_nao').checked = true;

@@ -1,19 +1,77 @@
 // ================================================
 // GOOGLE_DRIVE_SERVICE.GS - UPLOAD DE FOTOS
 // ================================================
-// Versão: 3.0.0
+// Versão: 3.1.0
 //
 // DEPENDÊNCIA: config.gs (getDrivePastaId, log)
 //
 // Upload de fotos de casais para Google Drive com URL pública.
 // O ID da pasta é obtido do PropertiesService (DRIVE_PASTA_ID).
 //
-// MELHORIAS v3.0.0:
+// MELHORIAS v3.1.0:
+//   - Upload antecipado via salvarFotoAntecipada()
+//   - Renomeação do arquivo após registro via renomearFotoCasal()
 //   - Objeto de contexto para rastreabilidade completa
 //   - Retry com backoff no setSharing (3 tentativas)
 //   - Log unificado (Logger + Console) via log()
 //   - Retorno de success: true mesmo se compartilhamento falhar
 // ================================================
+
+/**
+ * Salva uma imagem no Google Drive (upload antecipado)
+ * Chamada imediatamente após o usuário selecionar a foto,
+ * antes do envio do formulário. Usa nome temporário.
+ * @param {string} base64Data - Dados da imagem em base64 (sem prefixo data:image)
+ * @returns {Object} { success, url, fileId, size, compartilhado }
+ */
+function salvarFotoAntecipada(base64Data) {
+  var nomeTemp = 'temp_' + new Date().getTime();
+  log('📷 Upload antecipado de foto (nome temporário: ' + nomeTemp + ')');
+  return salvarImagemNoDrive(base64Data, nomeTemp);
+}
+
+/**
+ * Renomeia um arquivo de foto no Drive para o nome definitivo do casal.
+ * Remove foto antiga com o mesmo nome, se existir.
+ * Chamada após a criação do registro no Odoo.
+ * @param {string} fileId - ID do arquivo no Google Drive
+ * @param {string} nomeCasal - Nome do casal (ex: "João & Maria")
+ * @returns {Object} { success, nomeArquivo }
+ */
+function renomearFotoCasal(fileId, nomeCasal) {
+  try {
+    var nomeArquivo = gerarNomeArquivo(nomeCasal);
+    var pastaId = getDrivePastaId();
+    var pasta = DriveApp.getFolderById(pastaId);
+
+    // Remover foto antiga com o mesmo nome (se existir)
+    var arquivosExistentes = pasta.getFilesByName(nomeArquivo);
+    while (arquivosExistentes.hasNext()) {
+      var arquivoAntigo = arquivosExistentes.next();
+      // Não remover o próprio arquivo que está sendo renomeado
+      if (arquivoAntigo.getId() !== fileId) {
+        log('🗑️ Removendo foto antiga: ' + arquivoAntigo.getName(), 'info', {
+          fotoAntigaId: arquivoAntigo.getId()
+        });
+        arquivoAntigo.setTrashed(true);
+      }
+    }
+
+    // Renomear o arquivo
+    var arquivo = DriveApp.getFileById(fileId);
+    arquivo.setName(nomeArquivo);
+
+    log('✅ Foto renomeada para: ' + nomeArquivo, 'info', { fileId: fileId });
+    return { success: true, nomeArquivo: nomeArquivo };
+
+  } catch (error) {
+    log('⚠️ Erro ao renomear foto: ' + error.toString(), 'warn', {
+      fileId: fileId,
+      nomeCasal: nomeCasal
+    });
+    return { success: false, error: error.message };
+  }
+}
 
 /**
  * Salva uma imagem no Google Drive
@@ -99,7 +157,7 @@ function salvarImagemNoDrive(base64Data, nomeCasal) {
           erro: sharingError.toString()
         });
         if (tentativa < 3) {
-          Utilities.sleep(1000 * tentativa); // espera 1s, 2s, 3s
+          Utilities.sleep(1000 * tentativa);
         } else {
           contexto.erroCompartilhamento = sharingError.toString();
           log('⚠️ Compartilhamento falhou após 3 tentativas', 'warn', contexto);

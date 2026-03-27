@@ -1,12 +1,12 @@
 // ================================================
 // ATUALIZACAO_CADASTRAL.GS - LÓGICA DE ATUALIZAÇÃO CADASTRAL
 // ================================================
-// Versão: 3.1.0
+// Versão: 3.2.0
 //
 // DEPENDÊNCIAS:
 //   - config.gs      (ODOO_MODELS, getAppConfig, log)
 //   - odoo_service.gs (odooSearchRead, odooCreate)
-//   - google_drive_service.gs (salvarImagemNoDrive)
+//   - google_drive_service.gs (salvarImagemNoDrive, salvarFotoAntecipada, renomearFotoCasal)
 //
 // MODELOS ODOO UTILIZADOS:
 //   - x_ficha_cadastral  → Fichas cadastrais de casais
@@ -14,10 +14,12 @@
 //   - x_habilidades      → Habilidades dos membros
 //   - x_pastorais        → Pastorais/atuação pastoral
 //
-// MELHORIAS v3.1.0:
+// MELHORIAS v3.2.0:
+//   - Suporte a foto pré-enviada (url_foto + foto_file_id)
+//   - Renomeação do arquivo após criação do registro
+//   - Compatibilidade com fluxo legado (imagem_base64)
 //   - Log unificado (Logger + Console) via log()
 //   - Rastreio de foto órfã no Drive quando odooCreate falha
-//   - Log completo da foto mesmo em caso de sucesso
 // ================================================
 
 
@@ -183,6 +185,11 @@ function prepararMany2many(ids) {
 
 /**
  * Cria uma nova atualização cadastral
+ * 
+ * Suporta dois fluxos de foto:
+ *   1) Foto pré-enviada: formData.url_foto + formData.foto_file_id (novo, mais rápido)
+ *   2) Foto no submit: formData.imagem_base64 (legado, compatibilidade)
+ * 
  * @param {Object} formData - Dados do formulário completo
  * @returns {Object} Resultado { success, id, message, casal, urlFoto, fotoFileId, timestamp }
  */
@@ -247,7 +254,7 @@ function criarAtualizacaoCadastral(formData) {
 
     // Círculo Ativo
     if (formData.circulo_ativo) {
-      recordData.x_studio_circulo_ativo = formData.circulo_ativo; // "Sim" ou "Não"
+      recordData.x_studio_circulo_ativo = formData.circulo_ativo;
     }
 
     // Temário
@@ -269,21 +276,35 @@ function criarAtualizacaoCadastral(formData) {
       log('🙏 Pastorais: ' + formData.atuacao_pastoral.length + ' itens');
     }
 
-    // ========== FOTO DO CASAL (Google Drive) ==========
+    // ========== FOTO DO CASAL ==========
     var urlFoto = '';
+    var fotoFileId = '';
     var fotoInfo = null;
 
-    if (formData.imagem_base64) {
+    if (formData.url_foto && formData.foto_file_id) {
+      // ---- FLUXO NOVO: Foto já foi enviada antecipadamente ----
+      urlFoto = formData.url_foto;
+      fotoFileId = formData.foto_file_id;
+      recordData.x_studio_url_foto = urlFoto;
+
+      log('📷 Foto pré-enviada detectada', 'info', {
+        fileId: fotoFileId,
+        url: urlFoto
+      });
+
+    } else if (formData.imagem_base64) {
+      // ---- FLUXO LEGADO: Upload no momento do submit ----
       try {
-        log('📷 Salvando foto no Google Drive...');
+        log('📷 Salvando foto no Google Drive (fluxo legado)...');
         var resultadoDrive = salvarImagemNoDrive(formData.imagem_base64, nomeCasal);
         fotoInfo = resultadoDrive;
 
         if (resultadoDrive.success) {
           urlFoto = resultadoDrive.url;
+          fotoFileId = resultadoDrive.fileId;
           recordData.x_studio_url_foto = urlFoto;
           log('✅ Foto salva com sucesso', 'info', {
-            fileId: resultadoDrive.fileId,
+            fileId: fotoFileId,
             url: urlFoto,
             tamanhoKB: (resultadoDrive.size / 1024).toFixed(2),
             compartilhado: resultadoDrive.compartilhado
@@ -307,26 +328,35 @@ function criarAtualizacaoCadastral(formData) {
     try {
       recordId = odooCreate(ODOO_MODELS.FICHA_CADASTRAL, recordData);
     } catch (odooError) {
-      // Se tinha foto salva, alertar foto órfã no Drive
-      if (fotoInfo && fotoInfo.success) {
+      // Se tinha foto salva (em qualquer fluxo), alertar foto órfã
+      var fotoOrfaId = fotoFileId || (fotoInfo && fotoInfo.fileId) || '';
+      if (fotoOrfaId) {
         log('🚨 FOTO ÓRFÃ NO DRIVE! O registro Odoo falhou mas a foto já foi salva.', 'error', {
-          fileId: fotoInfo.fileId,
-          url: fotoInfo.url,
+          fileId: fotoOrfaId,
+          url: urlFoto,
           casal: nomeCasal,
-          compartilhado: fotoInfo.compartilhado,
           erroOdoo: odooError.toString()
         });
       }
-      throw odooError; // propaga pro catch geral
+      throw odooError;
     }
 
     log('✅ Registro criado com ID: ' + recordId);
+
+    // ========== RENOMEAR FOTO (fluxo antecipado) ==========
+    if (formData.url_foto && formData.foto_file_id) {
+      try {
+        renomearFotoCasal(formData.foto_file_id, nomeCasal);
+      } catch (renameError) {
+        log('⚠️ Erro ao renomear foto (não crítico): ' + renameError.toString(), 'warn');
+      }
+    }
+
     log('✅ Ficha cadastral criada com ID: ' + recordId, 'info', {
       recordId: recordId,
       casal: nomeCasal,
-      fotoFileId: fotoInfo ? fotoInfo.fileId : '',
-      fotoUrl: urlFoto || 'sem foto',
-      fotoCompartilhada: fotoInfo ? fotoInfo.compartilhado : 'N/A'
+      fotoFileId: fotoFileId,
+      fotoUrl: urlFoto || 'sem foto'
     });
 
     return {
@@ -335,7 +365,7 @@ function criarAtualizacaoCadastral(formData) {
       message: 'Ficha cadastral enviada com sucesso!',
       casal: nomeCasal,
       urlFoto: urlFoto,
-      fotoFileId: fotoInfo ? fotoInfo.fileId : '',
+      fotoFileId: fotoFileId,
       timestamp: new Date().toISOString()
     };
 
