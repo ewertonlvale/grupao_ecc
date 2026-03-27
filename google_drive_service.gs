@@ -1,22 +1,20 @@
 // ================================================
 // GOOGLE_DRIVE_SERVICE.GS - UPLOAD DE FOTOS
 // ================================================
-// Versão: 3.1.0
+// Versão: 3.2.0
 //
 // DEPENDÊNCIA: config.gs (getDrivePastaId, log)
+//              Drive API v3 (Advanced Service)
 //
-// Upload de fotos de casais para Google Drive com URL pública.
-// O ID da pasta é obtido do PropertiesService (DRIVE_PASTA_ID).
-//
-// MELHORIAS v3.1.0:
+// MELHORIAS v3.2.0:
+//   - Migração de DriveApp para Drive API (Advanced Service)
+//     para compatibilidade com projeto GCP custom
+//   - setSharing → Drive.Permissions.create
+//   - setName/setTrashed → Drive.Files.update
 //   - Upload antecipado via salvarFotoAntecipada()
 //   - Renomeação do arquivo após registro via renomearFotoCasal()
 //   - Objeto de contexto para rastreabilidade completa
-//   - Retry com backoff no setSharing (3 tentativas)
-//   - Log unificado (Logger + Console) via log()
-//   - Retorno de success: true mesmo se compartilhamento falhar
-// ================================================
-
+//   - Retry com backoff no createFile (3 tentativas)
 /**
  * Salva uma imagem no Google Drive (upload antecipado)
  * Chamada imediatamente após o usuário selecionar a foto,
@@ -53,13 +51,13 @@ function renomearFotoCasal(fileId, nomeCasal) {
         log('🗑️ Removendo foto antiga: ' + arquivoAntigo.getName(), 'info', {
           fotoAntigaId: arquivoAntigo.getId()
         });
-        arquivoAntigo.setTrashed(true);
+       
+        Drive.Files.update({ trashed: true }, arquivoAntigo.getId());
       }
     }
 
-    // Renomear o arquivo
-    var arquivo = DriveApp.getFileById(fileId);
-    arquivo.setName(nomeArquivo);
+    // Renomear o arquivo via Drive API (Advanced Service)
+    Drive.Files.update({ name: nomeArquivo }, fileId);
 
     log('✅ Foto renomeada para: ' + nomeArquivo, 'info', { fileId: fileId });
     return { success: true, nomeArquivo: nomeArquivo };
@@ -116,23 +114,47 @@ function salvarImagemNoDrive(base64Data, nomeCasal) {
     );
     contexto.tamanhoBlob = blob.getBytes().length;
 
-    // Obter pasta
-    var pasta = DriveApp.getFolderById(pastaId);
+    // Obter pasta e criar arquivo — com retry para erros transientes
+    var pasta = null;
+    var arquivo = null;
+    var MAX_TENTATIVAS_DRIVE = 3;
 
-    // Remover foto antiga (se existir)
-    var arquivosExistentes = pasta.getFilesByName(contexto.nomeArquivo);
-    if (arquivosExistentes.hasNext()) {
-      var arquivoAntigo = arquivosExistentes.next();
-      contexto.fotoAntigaId = arquivoAntigo.getId();
-      log('🗑️ Removendo foto antiga: ' + arquivoAntigo.getName(), 'info', {
-        fotoAntigaId: contexto.fotoAntigaId
-      });
-      arquivoAntigo.setTrashed(true);
-      contexto.fotoAntigaRemovida = true;
+    for (var tentativaDrive = 1; tentativaDrive <= MAX_TENTATIVAS_DRIVE; tentativaDrive++) {
+      try {
+        if (!pasta) {
+          pasta = DriveApp.getFolderById(pastaId);
+        }
+
+        // Remover foto antiga (se existir) — apenas na primeira tentativa
+        if (tentativaDrive === 1) {
+          var arquivosExistentes = pasta.getFilesByName(contexto.nomeArquivo);
+          if (arquivosExistentes.hasNext()) {
+            var arquivoAntigo = arquivosExistentes.next();
+            contexto.fotoAntigaId = arquivoAntigo.getId();
+            log('🗑️ Removendo foto antiga: ' + arquivoAntigo.getName(), 'info', {
+              fotoAntigaId: contexto.fotoAntigaId
+            });
+            Drive.Files.update({ trashed: true }, arquivoAntigo.getId());
+            contexto.fotoAntigaRemovida = true;
+          }
+        }
+
+        // Criar novo arquivo
+        arquivo = pasta.createFile(blob);
+        break; // Sucesso — sair do loop
+      } catch (driveError) {
+        log('⚠️ Tentativa ' + tentativaDrive + '/' + MAX_TENTATIVAS_DRIVE + ' de upload falhou: ' + driveError.toString(), 'warn', {
+          tentativa: tentativaDrive,
+          erro: driveError.toString()
+        });
+        if (tentativaDrive < MAX_TENTATIVAS_DRIVE) {
+          Utilities.sleep(1000 * tentativaDrive); // Backoff: 1s, 2s
+        } else {
+          throw driveError; // Repassar erro na última tentativa
+        }
+      }
     }
 
-    // Criar novo arquivo
-    var arquivo = pasta.createFile(blob);
     contexto.fileId = arquivo.getId();
     contexto.arquivoCriado = true;
     contexto.tamanhoArquivo = arquivo.getSize();
@@ -142,27 +164,17 @@ function salvarImagemNoDrive(base64Data, nomeCasal) {
       tamanhoKB: (contexto.tamanhoArquivo / 1024).toFixed(2)
     });
 
-    // Tornar público - com retry isolado e backoff
-    for (var tentativa = 1; tentativa <= 3; tentativa++) {
-      contexto.tentativasCompartilhamento = tentativa;
-      try {
-        arquivo.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-        contexto.compartilhado = true;
-        log('🔓 Compartilhamento configurado com sucesso');
-        break;
-      } catch (sharingError) {
-        log('⚠️ Tentativa ' + tentativa + '/3 de compartilhamento falhou', 'warn', {
-          tentativa: tentativa,
-          fileId: contexto.fileId,
-          erro: sharingError.toString()
-        });
-        if (tentativa < 3) {
-          Utilities.sleep(1000 * tentativa);
-        } else {
-          contexto.erroCompartilhamento = sharingError.toString();
-          log('⚠️ Compartilhamento falhou após 3 tentativas', 'warn', contexto);
-        }
-      }
+    // Tornar público - via Drive API (Advanced Service)
+    try {
+      Drive.Permissions.create(
+        { role: 'reader', type: 'anyone' },
+        contexto.fileId
+      );
+      contexto.compartilhado = true;
+      log('🔓 Compartilhamento configurado com sucesso');
+    } catch (sharingError) {
+      contexto.erroCompartilhamento = sharingError.toString();
+      log('⚠️ Compartilhamento falhou: ' + sharingError.toString(), 'warn', contexto);
     }
 
     var urlVisualizacao = 'https://drive.google.com/thumbnail?id=' + contexto.fileId + '&sz=w800';
@@ -237,7 +249,7 @@ function removerFotoCasal(nomeCasal) {
     while (arquivos.hasNext()) {
       var arquivo = arquivos.next();
       log('🗑️ Removendo foto: ' + arquivo.getName(), 'info', { fileId: arquivo.getId() });
-      arquivo.setTrashed(true);
+      Drive.Files.update({ trashed: true }, arquivo.getId());
       removidos++;
     }
 

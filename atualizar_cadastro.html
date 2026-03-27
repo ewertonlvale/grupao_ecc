@@ -668,12 +668,38 @@
         }
 
         /**
+         * Detecta HEIC por magic bytes (para arquivos .jpg que são HEIC disfarçado)
+         * Retorna Promise<boolean>
+         */
+        function detectHeicByBytes(file) {
+            return new Promise(function(resolve) {
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    var arr = new Uint8Array(e.target.result);
+                    // HEIC/HEIF magic: "ftyp" at offset 4, seguido de heic/heix/mif1/msf1/hevc
+                    if (arr.length >= 12) {
+                        var ftyp = String.fromCharCode(arr[4], arr[5], arr[6], arr[7]);
+                        var brand = String.fromCharCode(arr[8], arr[9], arr[10], arr[11]);
+                        if (ftyp === 'ftyp' && ['heic', 'heix', 'mif1', 'msf1', 'hevc'].indexOf(brand) !== -1) {
+                            resolve(true);
+                            return;
+                        }
+                    }
+                    resolve(false);
+                };
+                reader.onerror = function() { resolve(false); };
+                reader.readAsArrayBuffer(file.slice(0, 16));
+            });
+        }
+
+        /**
          * Processa a imagem com suporte a HEIC.
          * Se HEIC, converte para JPEG via heic2any.
          * Em seguida, faz upload antecipado para o Drive.
          */
         function processarFoto(file) {
             if (!file) return;
+            if (fotoUploadEmAndamento) return;
             
             console.log('📷 Processando imagem:', file.name, 'Tipo:', file.type, 'Tamanho:', (file.size / 1024).toFixed(2) + 'KB');
             
@@ -705,8 +731,27 @@
                     setTimeout(function() { indicator.classList.remove('show'); }, 5000);
                 });
             } else {
-                document.getElementById('compressionText').textContent = 'Carregando imagem...';
-                carregarEEnviarFoto(file, file.size);
+                // Verificar magic bytes — pega .jpg que é HEIC disfarçado (comum no iPhone)
+                detectHeicByBytes(file).then(function(isReallyHeic) {
+                    if (isReallyHeic) {
+                        console.log('⚠️ Arquivo com extensão .' + file.name.split('.').pop() + ' mas conteúdo HEIC detectado');
+                        document.getElementById('compressionText').textContent = '🔄 Convertendo imagem (HEIC → JPEG)...';
+                        heic2any({ blob: file, toType: 'image/jpeg', quality: 0.85 })
+                            .then(function(blobJpeg) {
+                                console.log('✅ HEIC disfarçado convertido:', (blobJpeg.size / 1024).toFixed(2) + 'KB');
+                                carregarEEnviarFoto(blobJpeg, file.size);
+                            })
+                            .catch(function(err) {
+                                console.error('❌ Erro ao converter HEIC disfarçado:', err);
+                                document.getElementById('compressionText').innerHTML = 
+                                    '❌ Erro ao processar imagem. Tente tirar a foto pela câmera.';
+                                setTimeout(function() { indicator.classList.remove('show'); }, 5000);
+                            });
+                    } else {
+                        document.getElementById('compressionText').textContent = 'Carregando imagem...';
+                        carregarEEnviarFoto(file, file.size);
+                    }
+                });
             }
         }
 
@@ -717,25 +762,52 @@
          */
         function carregarEEnviarFoto(blob, tamanhoOriginal) {
             var indicator = document.getElementById('compressionIndicator');
-            var reader = new FileReader();
+            var MAX_LARGURA = 800;
+            var QUALIDADE_JPEG = 0.7;
 
-            reader.onload = function(event) {
+            document.getElementById('compressionText').textContent = '🔄 Redimensionando imagem...';
+
+            // Criar URL temporária para carregar no canvas
+            var urlTemp = URL.createObjectURL(blob);
+            var img = new Image();
+
+            img.onload = function() {
+                URL.revokeObjectURL(urlTemp);
+
+                // Calcular dimensões mantendo proporção
+                var largura = img.width;
+                var altura = img.height;
+                if (largura > MAX_LARGURA) {
+                    altura = Math.round(altura * (MAX_LARGURA / largura));
+                    largura = MAX_LARGURA;
+                }
+
+                // Comprimir via canvas
+                var canvas = document.createElement('canvas');
+                canvas.width = largura;
+                canvas.height = altura;
+                var ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, largura, altura);
+
+                var dataUrl = canvas.toDataURL('image/jpeg', QUALIDADE_JPEG);
+
                 // Atualizar preview
-                document.getElementById('photoPreview').src = event.target.result;
+                document.getElementById('photoPreview').src = dataUrl;
                 document.getElementById('photoPreview').style.display = 'block';
-                
+
                 // Extrair base64 puro (sem prefixo data:image)
-                var base64Puro = event.target.result.split(',')[1];
-                
+                var base64Puro = dataUrl.split(',')[1];
+
                 // Guardar base64 como fallback (caso upload antecipado falhe)
                 imagemBase64 = base64Puro;
 
-                var tamanhoFinalKB = (blob.size / 1024).toFixed(2);
+                var tamanhoFinalKB = (base64Puro.length * 0.75 / 1024).toFixed(2);
+                console.log('📐 Imagem redimensionada: ' + img.width + 'x' + img.height + ' → ' + largura + 'x' + altura + ' (' + tamanhoFinalKB + 'KB)');
 
                 // Atualizar indicador → agora fazendo upload
-                document.getElementById('compressionText').innerHTML = 
+                document.getElementById('compressionText').innerHTML =
                     '☁️ Enviando foto para o servidor... (' + tamanhoFinalKB + 'KB)';
-                
+
                 console.log('☁️ Iniciando upload antecipado para o Drive...');
                 fotoUploadEmAndamento = true;
 
@@ -759,7 +831,7 @@
                         } else {
                             // Upload falhou — mantém base64 como fallback
                             console.warn('⚠️ Upload antecipado falhou, será enviado no submit:', resultado);
-                            document.getElementById('compressionText').innerHTML = 
+                            document.getElementById('compressionText').innerHTML =
                                 '✅ Imagem carregada: ' + tamanhoFinalKB + 'KB (será enviada com o formulário)';
                         }
 
@@ -769,21 +841,21 @@
                         fotoUploadEmAndamento = false;
                         // Upload falhou — mantém base64 como fallback
                         console.error('⚠️ Erro no upload antecipado, será enviado no submit:', error);
-                        var tamanhoKB = (blob.size / 1024).toFixed(2);
-                        document.getElementById('compressionText').innerHTML = 
-                            '✅ Imagem carregada: ' + tamanhoKB + 'KB (será enviada com o formulário)';
+                        document.getElementById('compressionText').innerHTML =
+                            '✅ Imagem carregada: ' + tamanhoFinalKB + 'KB (será enviada com o formulário)';
                         setTimeout(function() { indicator.classList.remove('show'); }, 3000);
                     })
                     .salvarFotoAntecipada(base64Puro);
             };
 
-            reader.onerror = function(error) {
-                console.error('❌ Erro ao ler imagem:', error);
+            img.onerror = function() {
+                URL.revokeObjectURL(urlTemp);
+                console.error('❌ Erro ao carregar imagem para compressão');
                 document.getElementById('compressionText').innerHTML = '❌ Erro ao carregar imagem. Tente novamente.';
                 setTimeout(function() { indicator.classList.remove('show'); }, 5000);
             };
 
-            reader.readAsDataURL(blob);
+            img.src = urlTemp;
         }
         
         // ========================================
