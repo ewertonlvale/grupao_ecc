@@ -1,10 +1,10 @@
 // ================================================
 // ATUALIZACAO_CADASTRAL.GS - LÓGICA DE ATUALIZAÇÃO CADASTRAL
 // ================================================
-// Versão: 3.0.0
+// Versão: 3.1.0
 //
 // DEPENDÊNCIAS:
-//   - config.gs      (ODOO_MODELS, getAppConfig)
+//   - config.gs      (ODOO_MODELS, getAppConfig, log)
 //   - odoo_service.gs (odooSearchRead, odooCreate)
 //   - google_drive_service.gs (salvarImagemNoDrive)
 //
@@ -13,6 +13,11 @@
 //   - x_comunidade       → Comunidades paroquiais
 //   - x_habilidades      → Habilidades dos membros
 //   - x_pastorais        → Pastorais/atuação pastoral
+//
+// MELHORIAS v3.1.0:
+//   - Log unificado (Logger + Console) via log()
+//   - Rastreio de foto órfã no Drive quando odooCreate falha
+//   - Log completo da foto mesmo em caso de sucesso
 // ================================================
 
 
@@ -22,20 +27,20 @@
  */
 function buscarComunidades() {
   try {
-    Logger.log('⛪ Buscando comunidades...');
+    log('⛪ Buscando comunidades...');
 
-    const comunidades = odooSearchRead(
+    var comunidades = odooSearchRead(
       ODOO_MODELS.COMUNIDADE,
       ['id', 'x_name', 'display_name'],
       [],
       { order: 'x_name asc' }
     );
 
-    Logger.log(`✅ Comunidades encontradas: ${comunidades.length}`);
+    log('✅ Comunidades encontradas: ' + comunidades.length);
     return comunidades;
 
   } catch (error) {
-    Logger.log(`❌ Erro ao buscar comunidades: ${error.toString()}`);
+    log('❌ Erro ao buscar comunidades: ' + error.toString(), 'error');
     return [];
   }
 }
@@ -47,10 +52,10 @@ function buscarComunidades() {
  */
 function buscarHabilidades() {
   try {
-    Logger.log('🎯 Buscando habilidades...');
+    log('🎯 Buscando habilidades...');
 
     // Tentar modelo principal (plural)
-    let habilidades = odooSearchRead(
+    var habilidades = odooSearchRead(
       ODOO_MODELS.HABILIDADES,
       ['id', 'x_name', 'display_name'],
       [],
@@ -59,7 +64,7 @@ function buscarHabilidades() {
 
     // Fallback para modelo alternativo (singular)
     if (!habilidades || habilidades.length === 0) {
-      Logger.log('⚠️ Tentando modelo alternativo: ' + ODOO_MODELS.HABILIDADES_ALT);
+      log('⚠️ Tentando modelo alternativo: ' + ODOO_MODELS.HABILIDADES_ALT, 'warn');
       habilidades = odooSearchRead(
         ODOO_MODELS.HABILIDADES_ALT,
         ['id', 'x_name', 'display_name'],
@@ -68,11 +73,11 @@ function buscarHabilidades() {
       );
     }
 
-    Logger.log(`✅ Habilidades encontradas: ${habilidades?.length || 0}`);
+    log('✅ Habilidades encontradas: ' + (habilidades ? habilidades.length : 0));
     return habilidades || [];
 
   } catch (error) {
-    Logger.log(`❌ Erro ao buscar habilidades: ${error.toString()}`);
+    log('❌ Erro ao buscar habilidades: ' + error.toString(), 'error');
     return [];
   }
 }
@@ -84,9 +89,9 @@ function buscarHabilidades() {
  */
 function buscarPastorais() {
   try {
-    Logger.log('🙏 Buscando pastorais...');
+    log('🙏 Buscando pastorais...');
 
-    let pastorais = odooSearchRead(
+    var pastorais = odooSearchRead(
       ODOO_MODELS.PASTORAIS,
       ['id', 'x_name', 'display_name'],
       [],
@@ -95,7 +100,7 @@ function buscarPastorais() {
 
     // Fallback para modelo alternativo (singular)
     if (!pastorais || pastorais.length === 0) {
-      Logger.log('⚠️ Tentando modelo alternativo: ' + ODOO_MODELS.PASTORAIS_ALT);
+      log('⚠️ Tentando modelo alternativo: ' + ODOO_MODELS.PASTORAIS_ALT, 'warn');
       pastorais = odooSearchRead(
         ODOO_MODELS.PASTORAIS_ALT,
         ['id', 'x_name', 'display_name'],
@@ -104,14 +109,15 @@ function buscarPastorais() {
       );
     }
 
-    Logger.log(`✅ Pastorais encontradas: ${pastorais?.length || 0}`);
+    log('✅ Pastorais encontradas: ' + (pastorais ? pastorais.length : 0));
     return pastorais || [];
 
   } catch (error) {
-    Logger.log(`❌ Erro ao buscar pastorais: ${error.toString()}`);
+    log('❌ Erro ao buscar pastorais: ' + error.toString(), 'error');
     return [];
   }
 }
+
 
 // ================================================
 // VALIDAÇÃO E UTILITÁRIOS
@@ -123,7 +129,7 @@ function buscarPastorais() {
  * @returns {Object} { valido: boolean, erros: string[] }
  */
 function validarFormulario(formData) {
-  const erros = [];
+  var erros = [];
 
   if (!formData.marido_nome?.trim()) erros.push('Nome do marido é obrigatório');
   if (!formData.marido_data_nascimento) erros.push('Data de nascimento do marido é obrigatória');
@@ -133,7 +139,7 @@ function validarFormulario(formData) {
   if (!formData.numero?.trim()) erros.push('Número é obrigatório');
   if (!formData.bairro?.trim()) erros.push('Bairro é obrigatório');
 
-  return { valido: erros.length === 0, erros };
+  return { valido: erros.length === 0, erros: erros };
 }
 
 /**
@@ -142,9 +148,9 @@ function validarFormulario(formData) {
  * @returns {string} Nome formatado do casal
  */
 function gerarNomeCasal(formData) {
-  const nomeMarido = (formData.marido_nome_usual || formData.marido_nome || '').trim().split(' ')[0];
-  const nomeEsposa = (formData.esposa_nome_usual || formData.esposa_nome || '').trim().split(' ')[0];
-  return `${nomeMarido} & ${nomeEsposa}`;
+  var nomeMarido = (formData.marido_nome_usual || formData.marido_nome || '').trim().split(' ')[0];
+  var nomeEsposa = (formData.esposa_nome_usual || formData.esposa_nome || '').trim().split(' ')[0];
+  return nomeMarido + ' & ' + nomeEsposa;
 }
 
 /**
@@ -155,8 +161,8 @@ function gerarNomeCasal(formData) {
 function converterParaInteiros(arr) {
   if (!Array.isArray(arr)) return [];
   return arr
-    .map(id => parseInt(id))
-    .filter(id => !isNaN(id) && id > 0);
+    .map(function(id) { return parseInt(id); })
+    .filter(function(id) { return !isNaN(id) && id > 0; });
 }
 
 /**
@@ -166,9 +172,10 @@ function converterParaInteiros(arr) {
  */
 function prepararMany2many(ids) {
   if (!ids || ids.length === 0) return null;
-  const idsInteiros = converterParaInteiros(ids);
+  var idsInteiros = converterParaInteiros(ids);
   return idsInteiros.length > 0 ? [[6, 0, idsInteiros]] : null;
 }
+
 
 // ================================================
 // OPERAÇÕES CRUD
@@ -177,24 +184,24 @@ function prepararMany2many(ids) {
 /**
  * Cria uma nova atualização cadastral
  * @param {Object} formData - Dados do formulário completo
- * @returns {Object} Resultado { success, id, message, casal, urlFoto, timestamp }
+ * @returns {Object} Resultado { success, id, message, casal, urlFoto, fotoFileId, timestamp }
  */
 function criarAtualizacaoCadastral(formData) {
   try {
-    Logger.log('📝 Iniciando criação de atualização cadastral...');
+    log('📝 Iniciando criação de atualização cadastral...');
 
     // Validar formulário
-    const validacao = validarFormulario(formData);
+    var validacao = validarFormulario(formData);
     if (!validacao.valido) {
-      Logger.log(`❌ Validação falhou: ${validacao.erros.join(', ')}`);
-      throw new Error(`Erros de validação:\n${validacao.erros.join('\n')}`);
+      log('❌ Validação falhou', 'error', { erros: validacao.erros });
+      throw new Error('Erros de validação:\n' + validacao.erros.join('\n'));
     }
 
-    const nomeCasal = gerarNomeCasal(formData);
-    Logger.log(`👥 Casal: ${nomeCasal}`);
+    var nomeCasal = gerarNomeCasal(formData);
+    log('👥 Casal: ' + nomeCasal);
 
     // Montar dados para o Odoo
-    const recordData = {
+    var recordData = {
       x_name: nomeCasal,
 
       // ========== DADOS DO MARIDO ==========
@@ -233,9 +240,9 @@ function criarAtualizacaoCadastral(formData) {
     };
 
     // Comunidade (Many2one)
-    const comunidadeId = formData.comunidade || formData.comunidade_id;
+    var comunidadeId = formData.comunidade || formData.comunidade_id;
     if (comunidadeId) {
-       recordData.x_studio_comunidade = parseInt(comunidadeId);
+      recordData.x_studio_comunidade = parseInt(comunidadeId);
     }
 
     // Círculo Ativo
@@ -249,41 +256,78 @@ function criarAtualizacaoCadastral(formData) {
     }
 
     // Habilidades (Many2many)
-    const habilidadesData = prepararMany2many(formData.habilidades);
+    var habilidadesData = prepararMany2many(formData.habilidades);
     if (habilidadesData) {
       recordData.x_studio_habilidades = habilidadesData;
-      Logger.log(`🎯 Habilidades: ${formData.habilidades.length} itens`);
+      log('🎯 Habilidades: ' + formData.habilidades.length + ' itens');
     }
 
     // Atuação Pastoral (Many2many)
-    const pastoraisData = prepararMany2many(formData.atuacao_pastoral);
+    var pastoraisData = prepararMany2many(formData.atuacao_pastoral);
     if (pastoraisData) {
       recordData.x_studio_atuacao_pastoral = pastoraisData;
-      Logger.log(`🙏 Pastorais: ${formData.atuacao_pastoral.length} itens`);
+      log('🙏 Pastorais: ' + formData.atuacao_pastoral.length + ' itens');
     }
 
-    // Foto do Casal (Google Drive)
-    let urlFoto = '';
+    // ========== FOTO DO CASAL (Google Drive) ==========
+    var urlFoto = '';
+    var fotoInfo = null;
+
     if (formData.imagem_base64) {
       try {
-        Logger.log('📷 Salvando foto no Google Drive...');
-        const resultadoDrive = salvarImagemNoDrive(formData.imagem_base64, nomeCasal);
+        log('📷 Salvando foto no Google Drive...');
+        var resultadoDrive = salvarImagemNoDrive(formData.imagem_base64, nomeCasal);
+        fotoInfo = resultadoDrive;
 
         if (resultadoDrive.success) {
           urlFoto = resultadoDrive.url;
           recordData.x_studio_url_foto = urlFoto;
-          Logger.log(`✅ Foto salva: ${urlFoto} (${(resultadoDrive.size / 1024).toFixed(2)} KB)`);
+          log('✅ Foto salva com sucesso', 'info', {
+            fileId: resultadoDrive.fileId,
+            url: urlFoto,
+            tamanhoKB: (resultadoDrive.size / 1024).toFixed(2),
+            compartilhado: resultadoDrive.compartilhado
+          });
         } else {
-          Logger.log('⚠️ Erro ao salvar foto, continuando sem foto');
+          log('⚠️ Erro ao salvar foto, continuando sem foto', 'warn', resultadoDrive);
         }
       } catch (driveError) {
-        Logger.log(`⚠️ Erro Drive: ${driveError.toString()} - Continuando sem foto`);
+        log('⚠️ Erro Drive: ' + driveError.toString() + ' - Continuando sem foto', 'warn', {
+          erro: driveError.toString(),
+          stack: driveError.stack || ''
+        });
       }
     }
 
-    // Criar registro no Odoo
-    const recordId = odooCreate(ODOO_MODELS.FICHA_CADASTRAL, recordData);
-    Logger.log(`✅ Ficha cadastral criada com ID: ${recordId}`);
+    // ========== CRIAR REGISTRO NO ODOO ==========
+    log('➕ Criando registro: x_ficha_cadastral');
+    log('📊 Dados: ' + JSON.stringify(recordData));
+
+    var recordId;
+    try {
+      recordId = odooCreate(ODOO_MODELS.FICHA_CADASTRAL, recordData);
+    } catch (odooError) {
+      // Se tinha foto salva, alertar foto órfã no Drive
+      if (fotoInfo && fotoInfo.success) {
+        log('🚨 FOTO ÓRFÃ NO DRIVE! O registro Odoo falhou mas a foto já foi salva.', 'error', {
+          fileId: fotoInfo.fileId,
+          url: fotoInfo.url,
+          casal: nomeCasal,
+          compartilhado: fotoInfo.compartilhado,
+          erroOdoo: odooError.toString()
+        });
+      }
+      throw odooError; // propaga pro catch geral
+    }
+
+    log('✅ Registro criado com ID: ' + recordId);
+    log('✅ Ficha cadastral criada com ID: ' + recordId, 'info', {
+      recordId: recordId,
+      casal: nomeCasal,
+      fotoFileId: fotoInfo ? fotoInfo.fileId : '',
+      fotoUrl: urlFoto || 'sem foto',
+      fotoCompartilhada: fotoInfo ? fotoInfo.compartilhado : 'N/A'
+    });
 
     return {
       success: true,
@@ -291,15 +335,17 @@ function criarAtualizacaoCadastral(formData) {
       message: 'Ficha cadastral enviada com sucesso!',
       casal: nomeCasal,
       urlFoto: urlFoto,
+      fotoFileId: fotoInfo ? fotoInfo.fileId : '',
       timestamp: new Date().toISOString()
     };
 
   } catch (error) {
-    Logger.log(`❌ Erro ao criar atualização: ${error.toString()}`);
-    Logger.log(`Stack: ${error.stack}`);
+    log('❌ Erro ao criar atualização: ' + error.toString(), 'error', {
+      stack: error.stack || ''
+    });
     return {
       success: false,
-      message: `Erro ao salvar ficha: ${error.message}`,
+      message: 'Erro ao salvar ficha: ' + error.message,
       error: error.toString()
     };
   }
@@ -316,7 +362,7 @@ function buscarAtualizacoesCasal(nomeCasal) {
       throw new Error('Nome do casal não pode estar vazio');
     }
 
-    Logger.log(`🔍 Buscando atualizações: ${nomeCasal}`);
+    log('🔍 Buscando atualizações: ' + nomeCasal);
 
     return odooSearchRead(
       ODOO_MODELS.FICHA_CADASTRAL,
@@ -327,8 +373,8 @@ function buscarAtualizacoesCasal(nomeCasal) {
     );
 
   } catch (error) {
-    Logger.log(`❌ Erro ao buscar atualizações: ${error.toString()}`);
-    throw new Error(`Erro ao buscar atualizações: ${error.message}`);
+    log('❌ Erro ao buscar atualizações: ' + error.toString(), 'error');
+    throw new Error('Erro ao buscar atualizações: ' + error.message);
   }
 }
 
@@ -339,8 +385,7 @@ function buscarAtualizacoesCasal(nomeCasal) {
  */
 function listarAtualizacoesRecentes(limit) {
   limit = Math.min(Math.max(parseInt(limit) || 50, 1), 200);
-
-  Logger.log(`📋 Listando atualizações recentes (limite: ${limit})`);
+  log('📋 Listando atualizações recentes (limite: ' + limit + ')');
 
   return odooSearchRead(
     ODOO_MODELS.FICHA_CADASTRAL,
@@ -359,9 +404,9 @@ function listarAtualizacoesRecentes(limit) {
  */
 function obterEstatisticasAtualizacoes() {
   try {
-    Logger.log('📊 Calculando estatísticas...');
+    log('📊 Calculando estatísticas...');
 
-    const atualizacoes = odooSearchRead(
+    var atualizacoes = odooSearchRead(
       ODOO_MODELS.FICHA_CADASTRAL,
       ['id', 'create_date',
        'x_studio_marido_batizado', 'x_studio_marido_primeira_eucaristia',
@@ -372,21 +417,21 @@ function obterEstatisticasAtualizacoes() {
       { order: 'create_date desc', limit: 500 }
     );
 
-    const total = atualizacoes.length;
+    var total = atualizacoes.length;
     if (total === 0) return { total: 0 };
 
-    const stats = {
-      total,
-      casamentoReligioso: atualizacoes.filter(a => a.x_studio_casamento_religioso).length,
-      etapa2: atualizacoes.filter(a => a.x_studio_fez_etapa_2).length,
-      etapa3: atualizacoes.filter(a => a.x_studio_fez_etapa_3).length
+    var stats = {
+      total: total,
+      casamentoReligioso: atualizacoes.filter(function(a) { return a.x_studio_casamento_religioso; }).length,
+      etapa2: atualizacoes.filter(function(a) { return a.x_studio_fez_etapa_2; }).length,
+      etapa3: atualizacoes.filter(function(a) { return a.x_studio_fez_etapa_3; }).length
     };
 
-    Logger.log(`✅ Estatísticas: ${JSON.stringify(stats)}`);
+    log('✅ Estatísticas calculadas', 'info', stats);
     return stats;
 
   } catch (error) {
-    Logger.log(`❌ Erro ao calcular estatísticas: ${error.toString()}`);
-    throw new Error(`Erro ao calcular estatísticas: ${error.message}`);
+    log('❌ Erro ao calcular estatísticas: ' + error.toString(), 'error');
+    throw new Error('Erro ao calcular estatísticas: ' + error.message);
   }
 }

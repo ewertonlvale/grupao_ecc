@@ -1,11 +1,51 @@
 // ================================================
 // CONFIG.GS - CONFIGURAÇÃO CENTRALIZADA
 // ================================================
-// Versão: 3.0.0
+// Versão: 3.1.0
 // Sistema: ECC - Paróquia Nossa Senhora da Conceição Aparecida
 //
 // SEGURANÇA: Todas as credenciais são armazenadas no
 // PropertiesService do Apps Script
+// ================================================
+
+// ================================================
+// LOG UNIFICADO
+// ================================================
+
+/**
+ * Log unificado - escreve no Logger (execução) e no Console (Cloud Logging/Stackdriver)
+ * @param {string} mensagem - Mensagem do log
+ * @param {string} [nivel='info'] - Nível: info, warn, error
+ * @param {Object} [dados] - Dados extras para contexto (será serializado como JSON)
+ */
+function log(mensagem, nivel, dados) {
+  nivel = nivel || 'info';
+
+  // Logger (log de execução do Apps Script)
+  Logger.log(mensagem);
+  if (dados) {
+    Logger.log('📋 Dados: ' + JSON.stringify(dados));
+  }
+
+  // Console (Cloud Logging / Stackdriver)
+  var mensagemConsole = dados
+    ? mensagem + ' | ' + JSON.stringify(dados)
+    : mensagem;
+
+  switch (nivel) {
+    case 'error':
+      console.error(mensagemConsole);
+      break;
+    case 'warn':
+      console.warn(mensagemConsole);
+      break;
+    default:
+      console.info(mensagemConsole);
+  }
+}
+
+// ================================================
+// CACHE E CONFIGURAÇÕES
 // ================================================
 
 /**
@@ -73,7 +113,7 @@ function getAuthToken() {
 function getAppConfig() {
   return {
     nome: 'ECC - Sistema Paroquial',
-    versao: '3.0.0',
+    versao: '3.1.0',
     paroquia: 'Nossa Senhora da Conceição Aparecida',
     ambiente: 'Produção'
   };
@@ -85,7 +125,7 @@ function getAppConfig() {
  */
 function limparCacheConfig() {
   _configCache = null;
-  Logger.log('🔄 Cache de configurações limpo');
+  log('🔄 Cache de configurações limpo');
 }
 
 /**
@@ -99,27 +139,27 @@ function limparCacheConfig() {
  */
 function configurarPropriedadesIniciais() {
   const props = PropertiesService.getScriptProperties();
-  
+
   props.setProperties({
     'ODOO_URL': 'https://ecc-pnscaparecida.odoo.com',
     'ODOO_DATABASE': 'ecc-pnscaparecida',
     'ODOO_UID': '6',
-    'ODOO_API_KEY': 'SUA_CHAVE_API_AQUI',           // ⚠️ Substituir!
-    'DRIVE_PASTA_ID': 'SEU_ID_DA_PASTA_AQUI',       // ⚠️ Substituir!
-    'AUTH_TOKEN': 'SEU_TOKEN_AQUI'                   // ⚠️ Substituir!
+    'ODOO_API_KEY': 'SUA_CHAVE_API_AQUI',       // ⚠️ Substituir!
+    'DRIVE_PASTA_ID': 'SEU_ID_DA_PASTA_AQUI',   // ⚠️ Substituir!
+    'AUTH_TOKEN': 'SEU_TOKEN_AQUI'               // ⚠️ Substituir!
   });
 
-  Logger.log('✅ Propriedades configuradas com sucesso!');
-  Logger.log('⚠️ REMOVA as credenciais deste código-fonte agora.');
-  Logger.log('📋 Propriedades salvas:');
-  
+  log('✅ Propriedades configuradas com sucesso!');
+  log('⚠️ REMOVA as credenciais deste código-fonte agora.', 'warn');
+
+  log('📋 Propriedades salvas:');
   const allProps = props.getProperties();
   Object.keys(allProps).forEach(key => {
     // Mascarar valores sensíveis no log
-    const valor = key.includes('KEY') || key.includes('TOKEN') 
-      ? allProps[key].substring(0, 4) + '****' 
+    const valor = key.includes('KEY') || key.includes('TOKEN')
+      ? allProps[key].substring(0, 4) + '****'
       : allProps[key];
-    Logger.log(`   ${key} = ${valor}`);
+    log('  ' + key + ' = ' + valor);
   });
 }
 
@@ -140,18 +180,15 @@ function verificarConfiguracoes() {
   requiredProps.forEach(prop => {
     const valor = props.getProperty(prop);
     const configurado = !!valor && valor.length > 0;
-    
     if (!configurado) todasOk = false;
-    
     status[prop] = {
       configurado: configurado,
       tamanho: valor ? valor.length : 0
     };
   });
 
-  Logger.log('📋 Status das configurações:');
-  Logger.log(JSON.stringify(status, null, 2));
-  Logger.log(todasOk ? '✅ Todas configurações OK' : '❌ Configurações faltando');
+  log('📋 Status das configurações:', 'info', status);
+  log(todasOk ? '✅ Todas configurações OK' : '❌ Configurações faltando', todasOk ? 'info' : 'warn');
 
   return { todasOk, status };
 }
@@ -166,25 +203,25 @@ function verificarConfiguracoes() {
 const ODOO_MODELS = {
   // Modelo de fichas cadastrais de casais
   FICHA_CADASTRAL: 'x_ficha_cadastral',
-  
+
   // Modelo de comunidades paroquiais
   COMUNIDADE: 'x_comunidade',
-  
+
   // Modelo de habilidades dos membros
   // Nota: O modelo pode ser singular ou plural dependendo da instalação
   HABILIDADES: 'x_habilidades',
   HABILIDADES_ALT: 'x_habilidade',
-  
+
   // Modelo de pastorais/atuação pastoral
   PASTORAIS: 'x_pastoral',
   PASTORAIS_ALT: 'x_pastoral',
-  
+
   // Modelo de grupões (encontros mensais)
   GRUPAO: 'x_grupao',
-  
+
   // Modelo de avaliações de grupão
   AVALIACAO_GRUPAO: 'x_avaliacao_grupao',
-  
+
   // Modelo de eventos do calendário
   CALENDARIO: 'x_calendario'
 };
