@@ -21,13 +21,6 @@
 function log(mensagem, nivel, dados) {
   nivel = nivel || 'info';
 
-  // Logger (log de execução do Apps Script)
-  Logger.log(mensagem);
-  if (dados) {
-    Logger.log('📋 Dados: ' + JSON.stringify(dados));
-  }
-
-  // Console (Cloud Logging / Stackdriver)
   var mensagemConsole = dados
     ? mensagem + ' | ' + JSON.stringify(dados)
     : mensagem;
