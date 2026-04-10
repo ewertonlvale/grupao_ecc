@@ -581,64 +581,205 @@
         // ========================================
         // ESTADO DA FOTO
         // ========================================
-        // Fluxo novo: foto é enviada ao Drive imediatamente
-        // e no submit, só vai a URL + fileId (sem base64 pesado)
-        
-        var imagemBase64 = null;       // Fallback legado (usado se upload antecipado falhar)
-        var fotoUrlDrive = null;       // URL da foto já salva no Drive
-        var fotoFileIdDrive = null;    // fileId da foto já salva no Drive
-        var fotoUploadEmAndamento = false;  // Controle para evitar submit durante upload
+        var imagemBase64 = null;
+        var fotoUrlDrive = null;
+        var fotoFileIdDrive = null;
+        var fotoUploadEmAndamento = false;
+
+        // Recuperar foto do sessionStorage (sobrevive a reload)
+        try {
+            fotoUrlDrive = sessionStorage.getItem('fotoUrlDrive') || null;
+            fotoFileIdDrive = sessionStorage.getItem('fotoFileIdDrive') || null;
+        } catch (e) {
+            console.warn('⚠️ sessionStorage indisponível:', e);
+        }
+
+        // Contador para restaurar formulário só após os 3 carregamentos do Odoo
+        var _dadosCarregados = 0;
+        function verificarRestauracao() {
+            _dadosCarregados++;
+            if (_dadosCarregados >= 3) {
+                restaurarFormularioDoStorage();
+            }
+        }
 
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('🚀 Carregando dados...');
-            mostrarLoading(true);
+        console.log('🚀 Carregando dados...');
+        mostrarLoading(true);
 
-            google.script.run
-                .withSuccessHandler(function(lista) {
-                    var select = document.getElementById('comunidadeSelect');
-                    select.innerHTML = '<option value="">Selecione</option>';
-                    lista.forEach(function(c) {
-                        select.innerHTML += '<option value="' + c.id + '">' + (c.x_name || c.display_name) + '</option>';
-                    });
-                })
-                .buscarComunidades();
-            
-            google.script.run
-                .withSuccessHandler(function(lista) {
-                    var div = document.getElementById('habilidadesGroup');
-                    div.innerHTML = '';
-                    if (lista.length === 0) {
-                        div.innerHTML = '<p class="text-muted">Nenhuma habilidade cadastrada</p>';
-                        return;
-                    }
-                    lista.forEach(function(h) {
-                        div.innerHTML += '<div class="checkbox-item">' +
-                            '<input type="checkbox" name="habilidades" value="' + h.id + '" id="hab_' + h.id + '">' +
-                            '<label for="hab_' + h.id + '">' + (h.x_name || h.display_name) + '</label>' +
-                            '</div>';
-                    });
-                })
-                .buscarHabilidades();
-            
-            google.script.run
-                .withSuccessHandler(function(lista) {
-                    var div = document.getElementById('pastoraisGroup');
-                    div.innerHTML = '';
-                    if (lista.length === 0) {
-                        div.innerHTML = '<p class="text-muted">Nenhuma pastoral cadastrada</p>';
-                        mostrarLoading(false);
-                        return;
-                    }
-                    lista.forEach(function(p) {
-                        div.innerHTML += '<div class="checkbox-item">' +
-                            '<input type="checkbox" name="atuacao_pastoral" value="' + p.id + '" id="past_' + p.id + '">' +
-                            '<label for="past_' + p.id + '">' + (p.x_name || p.display_name) + '</label>' +
-                            '</div>';
-                    });
+        google.script.run
+            .withSuccessHandler(function(lista) {
+                var select = document.getElementById('comunidadeSelect');
+                select.innerHTML = '<option value="">Selecione</option>';
+                lista.forEach(function(c) {
+                    select.innerHTML += '<option value="' + c.id + '">' + (c.x_name || c.display_name) + '</option>';
+                });
+                verificarRestauracao();
+            })
+            .buscarComunidades();
+        
+        google.script.run
+            .withSuccessHandler(function(lista) {
+                var div = document.getElementById('habilidadesGroup');
+                div.innerHTML = '';
+                if (lista.length === 0) {
+                    div.innerHTML = '<p class="text-muted">Nenhuma habilidade cadastrada</p>';
+                    verificarRestauracao();
+                    return;
+                }
+                lista.forEach(function(h) {
+                    div.innerHTML += '<div class="checkbox-item">' +
+                        '<input type="checkbox" name="habilidades" value="' + h.id + '" id="hab_' + h.id + '">' +
+                        '<label for="hab_' + h.id + '">' + (h.x_name || h.display_name) + '</label>' +
+                        '</div>';
+                });
+                verificarRestauracao();
+            })
+            .buscarHabilidades();
+        
+        google.script.run
+            .withSuccessHandler(function(lista) {
+                var div = document.getElementById('pastoraisGroup');
+                div.innerHTML = '';
+                if (lista.length === 0) {
+                    div.innerHTML = '<p class="text-muted">Nenhuma pastoral cadastrada</p>';
                     mostrarLoading(false);
-                })
-                .buscarPastorais();
+                    verificarRestauracao();
+                    return;
+                }
+                lista.forEach(function(p) {
+                    div.innerHTML += '<div class="checkbox-item">' +
+                        '<input type="checkbox" name="atuacao_pastoral" value="' + p.id + '" id="past_' + p.id + '">' +
+                        '<label for="past_' + p.id + '">' + (p.x_name || p.display_name) + '</label>' +
+                        '</div>';
+                });
+                mostrarLoading(false);
+                verificarRestauracao();
+            })
+            .buscarPastorais();
         });
+
+        // ========================================
+        // PERSISTÊNCIA DE DADOS (sessionStorage)
+        // Sobrevive a reload — limpa só no envio
+        // ========================================
+
+        /**
+         * Salva todos os campos do formulário no sessionStorage
+         */
+        function salvarFormularioNoStorage() {
+            try {
+                var form = document.getElementById('atualizacaoForm');
+                if (!form) return;
+
+                var dados = {};
+
+                // Inputs text, tel, date, select, textarea
+                form.querySelectorAll('input[type="text"], input[type="tel"], input[type="email"], select, textarea').forEach(function(el) {
+                    if (el.name || el.id) {
+                        dados[el.name || el.id] = el.value;
+                    }
+                });
+
+                // Checkboxes (sacramentos, habilidades, pastorais)
+                form.querySelectorAll('input[type="checkbox"]').forEach(function(el) {
+                    var key = 'chk_' + (el.name || '') + '_' + (el.value || el.id);
+                    dados[key] = el.checked;
+                });
+
+                // Radio buttons (casamento, etapas, círculo)
+                form.querySelectorAll('input[type="radio"]:checked').forEach(function(el) {
+                    if (el.name) {
+                        dados['radio_' + el.name] = el.value;
+                    }
+                });
+
+                sessionStorage.setItem('formDados', JSON.stringify(dados));
+            } catch (e) {
+                console.warn('⚠️ Erro ao salvar no sessionStorage:', e);
+            }
+        }
+
+        /**
+        * Restaura os campos do formulário a partir do sessionStorage
+        * Chamada após os selects/checkboxes serem populados pelo Odoo
+        */
+        function restaurarFormularioDoStorage() {
+            try {
+                var json = sessionStorage.getItem('formDados');
+                if (!json) return;
+
+                var dados = JSON.parse(json);
+                var form = document.getElementById('atualizacaoForm');
+                if (!form) return;
+
+                // Inputs text, tel, date, select, textarea
+                form.querySelectorAll('input[type="text"], input[type="tel"], input[type="email"], select, textarea').forEach(function(el) {
+                    var key = el.name || el.id;
+                    if (key && dados[key] !== undefined && dados[key] !== '') {
+                        el.value = dados[key];
+                    }
+                });
+
+                // Checkboxes
+                form.querySelectorAll('input[type="checkbox"]').forEach(function(el) {
+                    var key = 'chk_' + (el.name || '') + '_' + (el.value || el.id);
+                    if (dados[key] !== undefined) {
+                        el.checked = dados[key];
+                    }
+                });
+
+                // Radio buttons
+                form.querySelectorAll('input[type="radio"]').forEach(function(el) {
+                    if (el.name && dados['radio_' + el.name] !== undefined) {
+                        el.checked = (el.value === dados['radio_' + el.name]);
+                    }
+                });
+
+                // Reativar visibilidade dos campos condicionais
+                if (typeof toggleDataCasamento === 'function') toggleDataCasamento();
+                if (typeof toggleCampoEtapa === 'function') {
+                    toggleCampoEtapa(2);
+                    toggleCampoEtapa(3);
+                }
+
+                // Restaurar preview da foto se já foi enviada
+                if (fotoUrlDrive) {
+                    var preview = document.getElementById('photoPreview');
+                    if (preview) {
+                        preview.src = fotoUrlDrive;
+                        preview.style.display = 'block';
+                    }
+                    var indicator = document.getElementById('compressionIndicator');
+                    if (indicator) {
+                        indicator.classList.add('show');
+                        document.getElementById('compressionText').innerHTML = '✅ Foto já enviada anteriormente';
+                        setTimeout(function() { indicator.classList.remove('show'); }, 3000);
+                    }
+                }
+
+                console.log('♻️ Formulário restaurado do sessionStorage');
+            } catch (e) {
+                console.warn('⚠️ Erro ao restaurar formulário:', e);
+            }
+        }
+
+        /**
+        * Limpa todos os dados salvos no sessionStorage
+        */
+        function limparStorage() {
+            try {
+                sessionStorage.removeItem('formDados');
+                sessionStorage.removeItem('fotoUrlDrive');
+                sessionStorage.removeItem('fotoFileIdDrive');
+            } catch (e) {
+                console.warn('⚠️ Erro ao limpar sessionStorage:', e);
+            }
+        }
+
+        // Auto-salvar a cada alteração em qualquer campo
+        document.getElementById('atualizacaoForm').addEventListener('input', salvarFormularioNoStorage);
+        document.getElementById('atualizacaoForm').addEventListener('change', salvarFormularioNoStorage);
         
         // ========================================
         // PROCESSAMENTO DE IMAGEM COM SUPORTE HEIC
@@ -707,6 +848,9 @@
             fotoUrlDrive = null;
             fotoFileIdDrive = null;
             imagemBase64 = null;
+
+            sessionStorage.removeItem('fotoUrlDrive');
+            sessionStorage.removeItem('fotoFileIdDrive');
 
             // Mostrar indicador
             var indicator = document.getElementById('compressionIndicator');
@@ -821,6 +965,10 @@
                             fotoFileIdDrive = resultado.fileId;
                             // Limpar base64 — não será mais necessário no submit
                             imagemBase64 = null;
+
+                            // Persistir para sobreviver a reload
+                            sessionStorage.setItem('fotoUrlDrive', fotoUrlDrive);
+                            sessionStorage.setItem('fotoFileIdDrive', fotoFileIdDrive);
 
                             var msg = '✅ Foto salva! (' + tamanhoFinalKB + 'KB)';
                             if (blob.size !== tamanhoOriginal) {
@@ -973,6 +1121,7 @@
 
             google.script.run
                 .withSuccessHandler(function(response) {
+                    limparStorage();
                     mostrarLoading(false);
                     console.log('✅ Resposta do servidor:', response);
                     document.getElementById('successMessage').classList.remove('d-none');
@@ -1031,31 +1180,34 @@
         }
 
         function novaAtualizacao() {
-            document.getElementById('successMessage').classList.add('d-none');
-            var form = document.getElementById('atualizacaoForm');
-            form.classList.remove('d-none');
-            form.reset();
-            var preview = document.getElementById('photoPreview');
-            if (preview) {
-                preview.src = '';
-                preview.style.display = 'none';
-            }
-            // Resetar estado da foto
-            imagemBase64 = null;
-            fotoUrlDrive = null;
-            fotoFileIdDrive = null;
-            fotoUploadEmAndamento = false;
-            
-            document.getElementById('casamento_nao').checked = true;
-            document.getElementById('fez_etapa_2_nao').checked = true;
-            document.getElementById('fez_etapa_3_nao').checked = true;
-            document.getElementById('campo_data_casamento').style.display = 'none';
-            document.getElementById('campo_encontro_2').style.display = 'none';
-            document.getElementById('campo_encontro_3').style.display = 'none';
-            document.getElementById('compressionIndicator').classList.remove('show');
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-            console.log('✅ Formulário limpo e pronto para nova atualização');
-        }
+          document.getElementById('successMessage').classList.add('d-none');
+          var form = document.getElementById('atualizacaoForm');
+          form.classList.remove('d-none');
+          form.reset();
+          var preview = document.getElementById('photoPreview');
+          if (preview) {
+              preview.src = '';
+              preview.style.display = 'none';
+          }
+          // Resetar estado da foto
+          imagemBase64 = null;
+          fotoUrlDrive = null;
+          fotoFileIdDrive = null;
+          fotoUploadEmAndamento = false;
+          
+          // Limpar sessionStorage
+          limparStorage();
+          
+          document.getElementById('casamento_nao').checked = true;
+          document.getElementById('fez_etapa_2_nao').checked = true;
+          document.getElementById('fez_etapa_3_nao').checked = true;
+          document.getElementById('campo_data_casamento').style.display = 'none';
+          document.getElementById('campo_encontro_2').style.display = 'none';
+          document.getElementById('campo_encontro_3').style.display = 'none';
+          document.getElementById('compressionIndicator').classList.remove('show');
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+          console.log('✅ Formulário limpo e pronto para nova atualização');
+      }
     </script>
 </body>
 </html>

@@ -77,7 +77,10 @@ function renomearFotoCasal(fileId, nomeCasal) {
  * @param {string} nomeCasal - Nome do casal para nomear o arquivo
  * @returns {Object} { success, url, urlDownload, fileId, size, compartilhado, contexto }
  */
-function salvarImagemNoDrive(base64Data, nomeCasal) {
+function salvarImagemNoDrive(base64Data, nomeCasal, pastaIdOverride) {
+
+  var pastaId = pastaIdOverride || getDrivePastaId();
+
   // Objeto de contexto — preenchido a cada etapa para rastreabilidade
   var contexto = {
     nomeCasal: nomeCasal,
@@ -96,7 +99,6 @@ function salvarImagemNoDrive(base64Data, nomeCasal) {
   };
 
   try {
-    var pastaId = getDrivePastaId();
     contexto.pastaId = pastaId;
     contexto.nomeArquivo = gerarNomeArquivo(nomeCasal);
 

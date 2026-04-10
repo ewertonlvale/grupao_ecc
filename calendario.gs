@@ -105,3 +105,59 @@ function obterEventosCalendario() {
     };
   }
 }
+
+/**
+ * Busca TODOS os eventos do Odoo (publicados e não publicados)
+ * @returns {Array} Lista de eventos processados
+ */
+function buscarTodosEventos() {
+  try {
+    log('📅 Buscando TODOS os eventos...');
+
+    const eventos = odooSearchRead(
+      ODOO_MODELS.CALENDARIO,
+      ['id', 'x_name', 'x_studio_date', 'x_studio_data_fim',
+      'x_studio_tipo_de_evento', 'x_studio_publicado'],
+      [],  // sem filtro de publicado
+      { order: 'x_studio_date asc', limit: 1000 }
+    );
+
+    log(`✅ Eventos encontrados: ${eventos.length}`);
+
+    return eventos.map(evento => ({
+      id: evento.id,
+      nome: evento.x_name || 'Evento sem nome',
+      dataInicio: evento.x_studio_date || '',
+      dataFim: evento.x_studio_data_fim || '',
+      tipo: evento.x_studio_tipo_de_evento || 'Evento',
+      publicado: evento.x_studio_publicado
+    }));
+
+  } catch (error) {
+    log('❌ Erro ao buscar eventos: ' + error.toString(), 'error');
+    throw error;
+  }
+}
+
+/**
+ * Função exposta para buscar TODOS os eventos via AJAX (frontend admin)
+ * @returns {Object} { sucesso, eventos, eventosPorMes }
+ */
+function obterTodosEventosCalendario() {
+  try {
+    const eventos = buscarTodosEventos();
+    const eventosPorMes = organizarEventosPorMes(eventos);
+
+    return {
+      sucesso: true,
+      eventos: eventos,
+      eventosPorMes: eventosPorMes
+    };
+
+  } catch (error) {
+    return {
+      sucesso: false,
+      erro: error.toString()
+    };
+  }
+}

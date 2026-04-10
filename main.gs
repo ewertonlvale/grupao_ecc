@@ -29,8 +29,11 @@ function doGet(e) {
       case 'calendario':
         return criarPagina('exibir_calendario', 'Calendário de Eventos - ECC');
 
-      case 'teste':
-        return criarPagina('atualizar_cadastro_v2', 'Teste Cadastral V2 - ECC');
+      case 'calendariocompleto':
+        return criarPagina('exibir_calendario_completo', 'Calendário Completo - ECC');
+
+      case 'ejc':
+        return criarPagina('ficha_cadastral_ejc', 'Ficha Cadastral - EJC');
 
       default:
         return criarPagina('atualizar_cadastro', 'Atualização Cadastral - ECC');

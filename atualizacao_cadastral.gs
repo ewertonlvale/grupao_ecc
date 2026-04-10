@@ -52,28 +52,20 @@ function buscarComunidades() {
  * Tenta modelo principal e alternativo (singular/plural)
  * @returns {Array} Lista de habilidades
  */
+/**
+ * Busca habilidades filtradas pelo grupo ECC Aparecida
+ * @returns {Array} Lista de habilidades do ECC
+ */
 function buscarHabilidades() {
   try {
-    log('🎯 Buscando habilidades...');
+    log('🎯 Buscando habilidades do grupo ECC Aparecida...');
 
-    // Tentar modelo principal (plural)
     var habilidades = odooSearchRead(
-      ODOO_MODELS.HABILIDADES,
+      'x_habilidades',
       ['id', 'x_name', 'display_name'],
-      [],
+      [['x_studio_company_id.name', '=', 'ECC Aparecida']],
       { order: 'x_name asc' }
     );
-
-    // Fallback para modelo alternativo (singular)
-    if (!habilidades || habilidades.length === 0) {
-      log('⚠️ Tentando modelo alternativo: ' + ODOO_MODELS.HABILIDADES_ALT, 'warn');
-      habilidades = odooSearchRead(
-        ODOO_MODELS.HABILIDADES_ALT,
-        ['id', 'x_name', 'display_name'],
-        [],
-        { order: 'x_name asc' }
-      );
-    }
 
     log('✅ Habilidades encontradas: ' + (habilidades ? habilidades.length : 0));
     return habilidades || [];
@@ -83,6 +75,8 @@ function buscarHabilidades() {
     return [];
   }
 }
+
+
 
 /**
  * Busca todas as pastorais

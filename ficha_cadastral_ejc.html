@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ficha Cadastral - EJC</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #1a2d4d 0%, #1a5276 50%, #2e86c1 100%);
+            min-height: 100vh;
+            padding: 20px 0;
+        }
+        .card {
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            animation: fadeIn 0.5s;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .card-header {
+            background: linear-gradient(135deg, #1a5276 0%, #2e86c1 100%);
+            color: white;
+            border-radius: 15px 15px 0 0 !important;
+            padding: 25px;
+        }
+        .section-title {
+            background: #eaf2f8;
+            padding: 15px;
+            border-radius: 10px;
+            border-left: 5px solid #1a5276;
+            margin: 30px 0 20px 0;
+            font-weight: 600;
+            color: #1a5276;
+        }
+        .section-title:first-of-type { margin-top: 0; }
+        .required::after {
+            content: " *";
+            color: #dc3545;
+        }
+        .form-control:focus, .form-select:focus {
+            border-color: #1a5276;
+            box-shadow: 0 0 0 0.2rem rgba(26, 82, 118, 0.25);
+        }
+        .btn-submit {
+            background: linear-gradient(135deg, #1a5276 0%, #2e86c1 100%);
+            border: none;
+            padding: 15px 50px;
+            font-size: 1.2rem;
+            border-radius: 50px;
+            color: white;
+            font-weight: 600;
+            box-shadow: 0 4px 15px rgba(26, 82, 118, 0.4);
+            transition: all 0.3s;
+        }
+        .btn-submit:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(26, 82, 118, 0.6);
+        }
+        .checkbox-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 5px;
+        }
+        .checkbox-item:hover { background: #eaf2f8; }
+        .checkbox-item input {
+            margin-right: 10px;
+            width: 18px;
+            height: 18px;
+        }
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: linear-gradient(135deg, rgba(26, 45, 77, 0.95) 0%, rgba(26, 82, 118, 0.95) 50%, rgba(46, 134, 193, 0.95) 100%);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+        }
+        .loading-overlay.show { display: flex; }
+        .sacramentos-group {
+            background: #eaf2f8;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+        .sacramentos-group .form-check { margin-bottom: 8px; }
+        @media (min-width: 769px) {
+            .mobile-only { display: none !important; }
+        }
+        .btn-outline-primary {
+            color: #1a5276;
+            border-color: #1a5276;
+        }
+        .btn-outline-primary:hover {
+            background-color: #1a5276;
+            border-color: #1a5276;
+            color: white;
+        }
+        .alert-info {
+            background-color: #eaf2f8;
+            border-color: #1a5276;
+            color: #1a2d4d;
+        }
+        .spinner-border-sm { color: #1a5276; }
+        .compression-indicator {
+            display: none;
+            margin-top: 10px;
+            padding: 10px;
+            background: #eaf2f8;
+            border-radius: 5px;
+            font-size: 0.9rem;
+        }
+        .compression-indicator.show { display: block; }
+    </style>
+</head>
+<body>
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="text-center text-white">
+            <div class="spinner-border" style="width: 3rem; height: 3rem;"></div>
+            <p class="mt-3">Carregando...</p>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-10 col-lg-8">
+                <div class="card">
+                    <div class="card-header text-center">
+                        <h1 class="mb-0">📋 Ficha Cadastral</h1>
+                        <p class="mb-0 mt-2">EJC - Encontro de Jovens com Cristo</p>
+                        <p class="mb-0">Paróquia Nossa Senhora da Conceição Aparecida</p>
+                    </div>
+                    
+                    <div class="card-body p-4">
+                        <div id="successMessage" class="alert alert-success d-none">
+                            <h5>✓ Cadastro enviado com sucesso!</h5>
+                            <p class="mb-2">Suas informações foram salvas!</p>
+                            <hr>
+                            <p class="mb-2">
+                                <small>
+                                    ℹ️ Caso tenha esquecido alguma informação ou precise corrigir algo, 
+                                    você pode enviar o formulário novamente.
+                                </small>
+                            </p>
+                            <button class="btn btn-sm btn-success mt-2" onclick="novaAtualizacao()">📤 Enviar Nova Atualização</button>
+                        </div>
+                        
+                        <div id="errorMessage" class="alert alert-danger d-none">
+                            <strong>❌ Erro</strong>
+                            <p class="mb-0 mt-2" id="errorDetails"></p>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <strong>ℹ️ Importante:</strong> Campos com <span class="text-danger">*</span> são obrigatórios.
+                        </div>
+                        
+                        <form id="fichaForm">
+                            <!-- FOTO -->
+                            <div class="section-title">📷 Sua Foto</div>
+                            
+                            <div class="mb-3">
+                                <small class="text-muted d-block mb-2">
+                                    ℹ️ Tire uma foto ou escolha da galeria uma imagem sua.
+                                </small>
+                            </div>
+                            
+                            <div class="text-center mb-3">
+                                <img id="photoPreview" class="img-thumbnail" style="max-width: 200px; max-height: 200px; border-radius: 10px; display: none;">
+                            </div>
+                            
+                            <div id="compressionIndicator" class="compression-indicator">
+                                <div class="d-flex align-items-center">
+                                    <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+                                    <span id="compressionText">Carregando imagem...</span>
+                                </div>
+                            </div>
+                            
+                            <input type="file" id="fotoInputCamera" accept="image/*" capture="user" style="display:none;">
+                            <input type="file" id="fotoInputGaleria" accept="image/*" style="display:none;">
+                            
+                            <div class="row g-2 mb-3">
+                                <div class="col-6">
+                                    <button type="button" class="btn btn-outline-primary w-100" onclick="document.getElementById('fotoInputCamera').click()">
+                                        📸 Tirar Foto
+                                    </button>
+                                </div>
+                                <div class="col-6 mobile-only">
+                                    <button type="button" class="btn btn-outline-primary w-100" onclick="document.getElementById('fotoInputGaleria').click()">
+                                        🖼️ Galeria
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="text-center">
+                                <small class="text-muted">JPG, PNG, WEBP ou HEIC</small>
+                            </div>
+
+                            <!-- DADOS PESSOAIS -->
+                            <div class="section-title">👤 Dados Pessoais</div>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label required">Nome Completo</label>
+                                    <input type="text" name="nome" class="form-control" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label required">Nome Usual</label>
+                                    <input type="text" name="nome_usual" class="form-control" required>
+                                    <small class="text-muted d-block mt-1">ℹ️ Como prefere ser chamado(a) no dia a dia.</small>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label required">Data de Nascimento</label>
+                                    <input type="text" name="data_nascimento" class="form-control data-input" required placeholder="DD/MM/AAAA" maxlength="10" inputmode="numeric">
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label required">Telefone</label>
+                                    <input type="tel" name="telefone" class="form-control telefone" required placeholder="(00) 00000-0000">
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Profissão</label>
+                                    <input type="text" name="profissao" class="form-control">
+                                </div>
+                            </div>
+
+                            <!-- SACRAMENTOS -->
+                            <div class="sacramentos-group">
+                                <label class="fw-bold mb-2">⛪ Sacramentos</label>
+                                <small class="text-muted d-block mb-2">ℹ️ Marque os sacramentos que já recebeu na Igreja Católica.</small>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="batizado" value="batizado">
+                                    <label class="form-check-label" for="batizado">Batizado</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="primeira_eucaristia" value="primeira_eucaristia">
+                                    <label class="form-check-label" for="primeira_eucaristia">Primeira Eucaristia</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="crismado" value="crismado">
+                                    <label class="form-check-label" for="crismado">Crismado</label>
+                                </div>
+                            </div>
+                            
+                            <!-- INFO PAIS -->
+                            <div class="section-title">👨‍👩‍👦 Informações dos Pais</div>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Nome do Pai</label>
+                                    <input type="text" name="nome_pai" class="form-control">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Telefone do Pai</label>
+                                    <input type="tel" name="telefone_pai" class="form-control telefone" placeholder="(00) 00000-0000">
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Nome da Mãe</label>
+                                    <input type="text" name="nome_mae" class="form-control">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Telefone da Mãe</label>
+                                    <input type="tel" name="telefone_mae" class="form-control telefone" placeholder="(00) 00000-0000">
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold">Pais são Católicos?</label>
+                                    <div>
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input" type="radio" name="pais_catolicos" id="pais_catolicos_sim" value="true">
+                                            <label class="form-check-label" for="pais_catolicos_sim">Sim</label>
+                                        </div>
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input" type="radio" name="pais_catolicos" id="pais_catolicos_nao" value="false">
+                                            <label class="form-check-label" for="pais_catolicos_nao">Não</label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold">Pais fizeram ECC?</label>
+                                    <div>
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input" type="radio" name="pais_fizeram_ecc" id="pais_ecc_sim" value="true">
+                                            <label class="form-check-label" for="pais_ecc_sim">Sim</label>
+                                        </div>
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input" type="radio" name="pais_fizeram_ecc" id="pais_ecc_nao" value="false">
+                                            <label class="form-check-label" for="pais_ecc_nao">Não</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- ENDEREÇO -->
+                            <div class="section-title">📍 Endereço</div>
+                            
+                            <div class="row">
+                                <div class="col-md-8 mb-3">
+                                    <label class="form-label required">Rua</label>
+                                    <input type="text" name="rua" class="form-control" required>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label required">Número</label>
+                                    <input type="text" name="numero" class="form-control" required>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label required">Bairro</label>
+                                    <input type="text" name="bairro" class="form-control" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Referência</label>
+                                    <input type="text" name="referencia" class="form-control">
+                                </div>
+                            </div>
+                            
+                            <!-- Localização Geográfica -->
+                            <div class="mb-3">
+                                <input type="hidden" name="latitude" id="latitude">
+                                <input type="hidden" name="longitude" id="longitude">
+                                <button type="button" class="btn btn-outline-primary w-100" id="btnLocalizacao" onclick="capturarLocalizacao()">
+                                    📍 Compartilhar minha localização
+                                </button>
+                                <div id="localizacaoStatus" class="mt-2" style="display: none;"></div>
+                                <small class="text-muted d-block mt-1">
+                                    ℹ️ Ajuda a localizar seu endereço no mapa. A localização é opcional.
+                                </small>
+                            </div>
+                            
+                            <!-- PASTORAL -->
+                            <div class="section-title">⛪ Informações Pastorais</div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label required">Comunidade</label>
+                                <select name="comunidade_id" class="form-select" id="comunidadeSelect">
+                                    <option value="">Carregando...</option>
+                                </select>
+                                <small class="text-muted d-block mt-1">ℹ️ Selecione a comunidade da paróquia onde você participa ou é mais próximo(a).</small>
+                            </div>
+                            
+                            <!-- HABILIDADES -->
+                            <div class="section-title">🎯 Habilidades</div>
+                            <small class="text-muted d-block mb-2">ℹ️ Marque as habilidades que você possui e pode compartilhar nas atividades do EJC.</small>
+                            <div class="checkbox-group" id="habilidadesGroup">
+                                <div class="text-center py-3">
+                                    <div class="spinner-border spinner-border-sm text-primary"></div>
+                                    <span class="ms-2">Carregando...</span>
+                                </div>
+                            </div>
+                            
+                            <!-- PASTORAIS -->
+                            <div class="section-title">🙏 Atuação Pastoral</div>
+                            <small class="text-muted d-block mb-2">ℹ️ Marque as pastorais ou grupos onde você já atua ou tem interesse em atuar.</small>
+                            <div class="checkbox-group" id="pastoraisGroup">
+                                <div class="text-center py-3">
+                                    <div class="spinner-border spinner-border-sm text-primary"></div>
+                                    <span class="ms-2">Carregando...</span>
+                                </div>
+                            </div>
+                            
+                            <div class="text-center mt-4">
+                                <button type="submit" class="btn btn-submit">📤 Enviar Ficha</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                
+                <div class="text-center text-white mt-3">
+                    <small>© 2026 EJC - Paróquia Nossa Senhora da Conceição Aparecida</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ========================================
+        // ESTADO DA FOTO
+        // ========================================
+        var imagemBase64 = null;
+        var fotoUrlDrive = null;
+        var fotoFileIdDrive = null;
+        var fotoUploadEmAndamento = false;
+
+        try {
+            fotoUrlDrive = sessionStorage.getItem('fotoUrlDrive_ejc') || null;
+            fotoFileIdDrive = sessionStorage.getItem('fotoFileIdDrive_ejc') || null;
+        } catch (e) {
+            console.warn('⚠️ sessionStorage indisponível:', e);
+        }
+
+        var _dadosCarregados = 0;
+        function verificarRestauracao() {
+            _dadosCarregados++;
+            if (_dadosCarregados >= 3) {
+                restaurarFormularioDoStorage();
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 EJC - Carregando dados...');
+            mostrarLoading(true);
+
+            google.script.run
+                .withSuccessHandler(function(lista) {
+                    var select = document.getElementById('comunidadeSelect');
+                    select.innerHTML = '<option value="">Selecione</option>';
+                    lista.forEach(function(c) {
+                        select.innerHTML += '<option value="' + c.id + '">' + (c.x_name || c.display_name) + '</option>';
+                    });
+                    verificarRestauracao();
+                })
+                .buscarComunidades();
+
+            google.script.run
+                .withSuccessHandler(function(lista) {
+                    var div = document.getElementById('habilidadesGroup');
+                    div.innerHTML = '';
+                    if (lista.length === 0) {
+                        div.innerHTML = '<p class="text-muted">Nenhuma habilidade cadastrada</p>';
+                        verificarRestauracao();
+                        return;
+                    }
+                    lista.forEach(function(h) {
+                        div.innerHTML += '<div class="checkbox-item">' +
+                            '<input type="checkbox" name="habilidades" value="' + h.id + '" id="hab_' + h.id + '">' +
+                            '<label for="hab_' + h.id + '">' + (h.x_name || h.display_name) + '</label>' +
+                            '</div>';
+                    });
+                    verificarRestauracao();
+                })
+                .buscarHabilidadesEJC();
+
+            google.script.run
+                .withSuccessHandler(function(lista) {
+                    var div = document.getElementById('pastoraisGroup');
+                    div.innerHTML = '';
+                    if (lista.length === 0) {
+                        div.innerHTML = '<p class="text-muted">Nenhuma pastoral cadastrada</p>';
+                        mostrarLoading(false);
+                        verificarRestauracao();
+                        return;
+                    }
+                    lista.forEach(function(p) {
+                        div.innerHTML += '<div class="checkbox-item">' +
+                            '<input type="checkbox" name="pastoral" value="' + p.id + '" id="past_' + p.id + '">' +
+                            '<label for="past_' + p.id + '">' + (p.x_name || p.display_name) + '</label>' +
+                            '</div>';
+                    });
+                    mostrarLoading(false);
+                    verificarRestauracao();
+                })
+                .buscarPastoraisEJC();
+        });
+
+        // ========================================
+        // PERSISTÊNCIA (sessionStorage)
+        // ========================================
+        function salvarFormularioNoStorage() {
+            try {
+                var form = document.getElementById('fichaForm');
+                if (!form) return;
+                var dados = {};
+
+                form.querySelectorAll('input[type="text"], input[type="tel"], input[type="email"], input[type="hidden"], select, textarea').forEach(function(el) {
+                    if (el.name || el.id) dados[el.name || el.id] = el.value;
+                });
+
+                form.querySelectorAll('input[type="checkbox"]').forEach(function(el) {
+                    dados['chk_' + (el.name || '') + '_' + (el.value || el.id)] = el.checked;
+                });
+
+                form.querySelectorAll('input[type="radio"]:checked').forEach(function(el) {
+                    if (el.name) dados['radio_' + el.name] = el.value;
+                });
+
+                sessionStorage.setItem('formDados_ejc', JSON.stringify(dados));
+            } catch (e) {
+                console.warn('⚠️ Erro ao salvar no sessionStorage:', e);
+            }
+        }
+
+        function restaurarFormularioDoStorage() {
+            try {
+                var json = sessionStorage.getItem('formDados_ejc');
+                if (!json) return;
+                var dados = JSON.parse(json);
+                var form = document.getElementById('fichaForm');
+                if (!form) return;
+
+                form.querySelectorAll('input[type="text"], input[type="tel"], input[type="email"], input[type="hidden"], select, textarea').forEach(function(el) {
+                    var key = el.name || el.id;
+                    if (key && dados[key] !== undefined && dados[key] !== '') el.value = dados[key];
+                });
+
+                form.querySelectorAll('input[type="checkbox"]').forEach(function(el) {
+                    var key = 'chk_' + (el.name || '') + '_' + (el.value || el.id);
+                    if (dados[key] !== undefined) el.checked = dados[key];
+                });
+
+                form.querySelectorAll('input[type="radio"]').forEach(function(el) {
+                    if (el.name && dados['radio_' + el.name] !== undefined) {
+                        el.checked = (el.value === dados['radio_' + el.name]);
+                    }
+                });
+
+                // Restaurar UI da geolocalização
+                var latRestaurado = document.getElementById('latitude').value;
+                var lngRestaurado = document.getElementById('longitude').value;
+                if (latRestaurado && lngRestaurado) {
+                    var btnLoc = document.getElementById('btnLocalizacao');
+                    btnLoc.innerHTML = '✅ Localização capturada';
+                    btnLoc.classList.remove('btn-outline-primary');
+                    btnLoc.classList.add('btn-success');
+                    var status = document.getElementById('localizacaoStatus');
+                    var lat = parseFloat(latRestaurado);
+                    var lng = parseFloat(lngRestaurado);
+                    status.style.display = 'block';
+                    status.innerHTML = '<small class="text-success">📍 Lat: ' + lat.toFixed(6) + ' | Lng: ' + lng.toFixed(6) + '</small>' +
+                        '<div id="mapaContainer" style="margin-top: 10px; border-radius: 10px; overflow: hidden; border: 2px solid #1a5276;">' +
+                        '<iframe width="100%" height="200" frameborder="0" style="border:0; display:block;" ' +
+                        'src="https://www.openstreetmap.org/export/embed.html?bbox=' +
+                        (lng - 0.003) + ',' + (lat - 0.002) + ',' + (lng + 0.003) + ',' + (lat + 0.002) +
+                        '&layer=mapnik&marker=' + lat + ',' + lng + '"></iframe></div>';
+                }
+
+                if (fotoUrlDrive) {
+                    var preview = document.getElementById('photoPreview');
+                    if (preview) { preview.src = fotoUrlDrive; preview.style.display = 'block'; }
+                    var indicator = document.getElementById('compressionIndicator');
+                    if (indicator) {
+                        indicator.classList.add('show');
+                        document.getElementById('compressionText').innerHTML = '✅ Foto já enviada anteriormente';
+                        setTimeout(function() { indicator.classList.remove('show'); }, 3000);
+                    }
+                }
+                console.log('♻️ Formulário EJC restaurado do sessionStorage');
+            } catch (e) {
+                console.warn('⚠️ Erro ao restaurar formulário:', e);
+            }
+        }
+
+        function limparStorage() {
+            try {
+                sessionStorage.removeItem('formDados_ejc');
+                sessionStorage.removeItem('fotoUrlDrive_ejc');
+                sessionStorage.removeItem('fotoFileIdDrive_ejc');
+            } catch (e) {}
+        }
+
+        document.getElementById('fichaForm').addEventListener('input', salvarFormularioNoStorage);
+        document.getElementById('fichaForm').addEventListener('change', salvarFormularioNoStorage);
+
+        // ========================================
+        // PROCESSAMENTO DE IMAGEM (HEIC + upload)
+        // ========================================
+        document.getElementById('fotoInputCamera').addEventListener('change', function(e) { processarFoto(e.target.files[0]); });
+        document.getElementById('fotoInputGaleria').addEventListener('change', function(e) { processarFoto(e.target.files[0]); });
+
+        function isHeic(file) {
+            var type = (file.type || '').toLowerCase();
+            var name = (file.name || '').toLowerCase();
+            return type === 'image/heic' || type === 'image/heif' || name.endsWith('.heic') || name.endsWith('.heif');
+        }
+
+        function detectHeicByBytes(file) {
+            return new Promise(function(resolve) {
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    var arr = new Uint8Array(e.target.result);
+                    if (arr.length >= 12) {
+                        var ftyp = String.fromCharCode(arr[4], arr[5], arr[6], arr[7]);
+                        var brand = String.fromCharCode(arr[8], arr[9], arr[10], arr[11]);
+                        if (ftyp === 'ftyp' && ['heic','heix','mif1','msf1','hevc'].indexOf(brand) !== -1) {
+                            resolve(true); return;
+                        }
+                    }
+                    resolve(false);
+                };
+                reader.onerror = function() { resolve(false); };
+                reader.readAsArrayBuffer(file.slice(0, 16));
+            });
+        }
+
+        function processarFoto(file) {
+            if (!file || fotoUploadEmAndamento) return;
+            console.log('📷 Processando:', file.name, file.type, (file.size/1024).toFixed(2)+'KB');
+
+            fotoUrlDrive = null; fotoFileIdDrive = null; imagemBase64 = null;
+            sessionStorage.removeItem('fotoUrlDrive_ejc');
+            sessionStorage.removeItem('fotoFileIdDrive_ejc');
+
+            var indicator = document.getElementById('compressionIndicator');
+            indicator.classList.add('show');
+
+            if (isHeic(file)) {
+                document.getElementById('compressionText').textContent = '🔄 Convertendo imagem (HEIC → JPEG)...';
+                heic2any({ blob: file, toType: 'image/jpeg', quality: 0.85 })
+                    .then(function(blob) { carregarEEnviarFoto(blob, file.size); })
+                    .catch(function() {
+                        document.getElementById('compressionText').innerHTML = '❌ Erro ao processar imagem. Tente tirar a foto pela câmera.';
+                        setTimeout(function() { indicator.classList.remove('show'); }, 5000);
+                    });
+            } else {
+                detectHeicByBytes(file).then(function(isReallyHeic) {
+                    if (isReallyHeic) {
+                        document.getElementById('compressionText').textContent = '🔄 Convertendo imagem (HEIC → JPEG)...';
+                        heic2any({ blob: file, toType: 'image/jpeg', quality: 0.85 })
+                            .then(function(blob) { carregarEEnviarFoto(blob, file.size); })
+                            .catch(function() {
+                                document.getElementById('compressionText').innerHTML = '❌ Erro ao processar imagem. Tente tirar a foto pela câmera.';
+                                setTimeout(function() { indicator.classList.remove('show'); }, 5000);
+                            });
+                    } else {
+                        document.getElementById('compressionText').textContent = 'Carregando imagem...';
+                        carregarEEnviarFoto(file, file.size);
+                    }
+                });
+            }
+        }
+
+        function carregarEEnviarFoto(blob, tamanhoOriginal) {
+            var indicator = document.getElementById('compressionIndicator');
+            var MAX_LARGURA = 800, QUALIDADE_JPEG = 0.7;
+            document.getElementById('compressionText').textContent = '🔄 Redimensionando imagem...';
+
+            var urlTemp = URL.createObjectURL(blob);
+            var img = new Image();
+            img.onload = function() {
+                URL.revokeObjectURL(urlTemp);
+                var largura = img.width, altura = img.height;
+                if (largura > MAX_LARGURA) {
+                    altura = Math.round(altura * (MAX_LARGURA / largura));
+                    largura = MAX_LARGURA;
+                }
+                var canvas = document.createElement('canvas');
+                canvas.width = largura; canvas.height = altura;
+                canvas.getContext('2d').drawImage(img, 0, 0, largura, altura);
+                var dataUrl = canvas.toDataURL('image/jpeg', QUALIDADE_JPEG);
+
+                document.getElementById('photoPreview').src = dataUrl;
+                document.getElementById('photoPreview').style.display = 'block';
+
+                var base64Puro = dataUrl.split(',')[1];
+                imagemBase64 = base64Puro;
+                var tamanhoFinalKB = (base64Puro.length * 0.75 / 1024).toFixed(2);
+
+                document.getElementById('compressionText').innerHTML = '☁️ Enviando foto para o servidor... (' + tamanhoFinalKB + 'KB)';
+                fotoUploadEmAndamento = true;
+
+                google.script.run
+                    .withSuccessHandler(function(res) {
+                        fotoUploadEmAndamento = false;
+                        if (res && res.success) {
+                            fotoUrlDrive = res.url; fotoFileIdDrive = res.fileId;
+                            imagemBase64 = null;
+                            sessionStorage.setItem('fotoUrlDrive_ejc', fotoUrlDrive);
+                            sessionStorage.setItem('fotoFileIdDrive_ejc', fotoFileIdDrive);
+                            document.getElementById('compressionText').innerHTML = '✅ Foto salva! (' + tamanhoFinalKB + 'KB)';
+                        } else {
+                            document.getElementById('compressionText').innerHTML = '✅ Imagem carregada: ' + tamanhoFinalKB + 'KB (será enviada com o formulário)';
+                        }
+                        setTimeout(function() { indicator.classList.remove('show'); }, 3000);
+                    })
+                    .withFailureHandler(function() {
+                        fotoUploadEmAndamento = false;
+                        document.getElementById('compressionText').innerHTML = '✅ Imagem carregada: ' + tamanhoFinalKB + 'KB (será enviada com o formulário)';
+                        setTimeout(function() { indicator.classList.remove('show'); }, 3000);
+                    })
+                    .salvarFotoAntecipadaEJC(base64Puro);
+            };
+            img.onerror = function() {
+                URL.revokeObjectURL(urlTemp);
+                document.getElementById('compressionText').innerHTML = '❌ Erro ao carregar imagem. Tente novamente.';
+                setTimeout(function() { indicator.classList.remove('show'); }, 5000);
+            };
+            img.src = urlTemp;
+        }
+
+        // ========================================
+        // GEOLOCALIZAÇÃO
+        // ========================================
+        function capturarLocalizacao() {
+            var btn = document.getElementById('btnLocalizacao');
+            var status = document.getElementById('localizacaoStatus');
+
+            if (!navigator.geolocation) {
+                status.style.display = 'block';
+                status.innerHTML = '<span class="text-danger">❌ Seu navegador não suporta geolocalização.</span>';
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerHTML = '<div class="spinner-border spinner-border-sm me-2" role="status"></div> Obtendo localização...';
+            status.style.display = 'block';
+            status.innerHTML = '<span class="text-muted">Aguarde, obtendo sua localização...</span>';
+
+            navigator.geolocation.getCurrentPosition(
+                function(position) {
+                    var lat = position.coords.latitude;
+                    var lng = position.coords.longitude;
+                    document.getElementById('latitude').value = lat;
+                    document.getElementById('longitude').value = lng;
+
+                    btn.innerHTML = '✅ Localização capturada';
+                    btn.classList.remove('btn-outline-primary');
+                    btn.classList.add('btn-success');
+                    btn.disabled = false;
+
+                    status.innerHTML = '<small class="text-success">📍 Lat: ' + lat.toFixed(6) + ' | Lng: ' + lng.toFixed(6) + '</small>' +
+                        '<div id="mapaContainer" style="margin-top: 10px; border-radius: 10px; overflow: hidden; border: 2px solid #1a5276;">' +
+                        '<iframe width="100%" height="200" frameborder="0" style="border:0; display:block;" ' +
+                        'src="https://www.openstreetmap.org/export/embed.html?bbox=' +
+                        (lng - 0.003) + ',' + (lat - 0.002) + ',' + (lng + 0.003) + ',' + (lat + 0.002) +
+                        '&layer=mapnik&marker=' + lat + ',' + lng + '"></iframe></div>';
+
+                    salvarFormularioNoStorage();
+                    console.log('📍 Localização capturada:', lat, lng);
+                },
+                function(error) {
+                    btn.disabled = false;
+                    btn.innerHTML = '📍 Compartilhar minha localização';
+                    var msg = '';
+                    switch (error.code) {
+                        case error.PERMISSION_DENIED:
+                            msg = 'Permissão negada. Habilite a localização nas configurações do navegador.';
+                            break;
+                        case error.POSITION_UNAVAILABLE:
+                            msg = 'Localização indisponível no momento.';
+                            break;
+                        case error.TIMEOUT:
+                            msg = 'Tempo esgotado. Tente novamente.';
+                            break;
+                        default:
+                            msg = 'Erro ao obter localização.';
+                    }
+                    status.innerHTML = '<span class="text-danger">❌ ' + msg + '</span>';
+                    console.warn('⚠️ Erro geolocalização:', error);
+                },
+                { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+            );
+        }
+
+        // ========================================
+        // MÁSCARAS
+        // ========================================
+        document.querySelectorAll('.telefone').forEach(function(input) {
+            input.addEventListener('input', function(e) {
+                var v = e.target.value.replace(/\D/g, '');
+                v = v.length <= 10
+                    ? v.replace(/^(\d{2})(\d{4})(\d{0,4}).*/, '($1) $2-$3')
+                    : v.replace(/^(\d{2})(\d{5})(\d{0,4}).*/, '($1) $2-$3');
+                e.target.value = v;
+            });
+        });
+
+        document.querySelectorAll('.data-input').forEach(function(input) {
+            input.addEventListener('input', function(e) {
+                var value = e.target.value.replace(/\D/g, '');
+                if (value.length >= 2) value = value.slice(0,2) + '/' + value.slice(2);
+                if (value.length >= 5) value = value.slice(0,5) + '/' + value.slice(5,9);
+                e.target.value = value;
+            });
+        });
+
+        // ========================================
+        // SUBMISSÃO
+        // ========================================
+        document.getElementById('fichaForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            if (!validarFormulario(e.target)) {
+                alert('Preencha todos os campos obrigatórios');
+                return;
+            }
+            if (fotoUploadEmAndamento) {
+                alert('Aguarde o envio da foto terminar antes de enviar o formulário.');
+                return;
+            }
+
+            mostrarLoading(true);
+
+            var formData = new FormData(e.target);
+            var data = {};
+            for (var pair of formData.entries()) {
+                var key = pair[0], value = pair[1];
+                if (key !== 'habilidades' && key !== 'pastoral') {
+                    data[key] = (value && typeof value === 'string') ? value.trim() : value;
+                }
+            }
+
+            data.habilidades = Array.from(document.querySelectorAll('input[name="habilidades"]:checked')).map(function(cb) { return cb.value; });
+            data.pastoral = Array.from(document.querySelectorAll('input[name="pastoral"]:checked')).map(function(cb) { return cb.value; });
+
+            // Sacramentos
+            data.batizado = document.getElementById('batizado').checked;
+            data.primeira_eucaristia = document.getElementById('primeira_eucaristia').checked;
+            data.crismado = document.getElementById('crismado').checked;
+
+            // Info Pais (booleanos)
+            var paisCatolicos = document.querySelector('input[name="pais_catolicos"]:checked');
+            data.pais_catolicos = paisCatolicos ? paisCatolicos.value === 'true' : null;
+            
+            var paisEcc = document.querySelector('input[name="pais_fizeram_ecc"]:checked');
+            data.pais_fizeram_ecc = paisEcc ? paisEcc.value === 'true' : null;
+
+            // Geolocalização
+            if (data.latitude && data.longitude) {
+                data.latitude = parseFloat(data.latitude);
+                data.longitude = parseFloat(data.longitude);
+            } else {
+                delete data.latitude;
+                delete data.longitude;
+            }
+
+            // Foto
+            if (fotoUrlDrive && fotoFileIdDrive) {
+                data.url_foto = fotoUrlDrive;
+                data.foto_file_id = fotoFileIdDrive;
+            } else if (imagemBase64) {
+                data.imagem_base64 = imagemBase64;
+            }
+
+            // Converter data DD/MM/AAAA → YYYY-MM-DD
+            function converterData(str) {
+                if (!str || str.length !== 10) return str;
+                var p = str.split('/');
+                return p.length === 3 ? p[2]+'-'+p[1]+'-'+p[0] : str;
+            }
+            data.data_nascimento = converterData(data.data_nascimento);
+
+            console.log('📤 Enviando ficha EJC:', Object.keys(data));
+
+            google.script.run
+                .withSuccessHandler(function(response) {
+                    limparStorage();
+                    mostrarLoading(false);
+                    document.getElementById('successMessage').classList.remove('d-none');
+                    document.getElementById('fichaForm').classList.add('d-none');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                })
+                .withFailureHandler(function(error) {
+                    mostrarLoading(false);
+                    document.getElementById('errorDetails').textContent = error.message;
+                    document.getElementById('errorMessage').classList.remove('d-none');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                })
+                .criarFichaCadastralEJC(data);
+        });
+
+        function validarFormulario(form) {
+            var valido = true;
+            form.querySelectorAll('[required]').forEach(function(campo) {
+                if (!campo.value.trim()) { campo.classList.add('is-invalid'); valido = false; }
+                else { campo.classList.remove('is-invalid'); }
+            });
+            return valido;
+        }
+
+        function mostrarLoading(show) {
+            document.getElementById('loadingOverlay').classList.toggle('show', show);
+        }
+
+        function novaAtualizacao() {
+            document.getElementById('successMessage').classList.add('d-none');
+            var form = document.getElementById('fichaForm');
+            form.classList.remove('d-none');
+            form.reset();
+            var preview = document.getElementById('photoPreview');
+            if (preview) { preview.src = ''; preview.style.display = 'none'; }
+            imagemBase64 = null; fotoUrlDrive = null; fotoFileIdDrive = null; fotoUploadEmAndamento = false;
+            limparStorage();
+            document.getElementById('compressionIndicator').classList.remove('show');
+            // Reset geolocalização
+            var btnLoc = document.getElementById('btnLocalizacao');
+            btnLoc.innerHTML = '📍 Compartilhar minha localização';
+            btnLoc.classList.remove('btn-success');
+            btnLoc.classList.add('btn-outline-primary');
+            document.getElementById('localizacaoStatus').style.display = 'none';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    </script>
+</body>
+</html>
