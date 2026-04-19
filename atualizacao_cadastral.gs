@@ -208,7 +208,7 @@ function criarAtualizacaoCadastral(formData) {
       // ========== DADOS DO MARIDO ==========
       x_studio_marido_nome: formData.marido_nome.trim(),
       x_studio_marido_nome_usual: formData.marido_nome_usual?.trim() || '',
-      x_studio_marido_data_nascimento: formData.marido_data_nascimento,
+      x_studio_marido_data_nascimento: formData.marido_data_nascimento && /^\d{4}-\d{2}-\d{2}$/.test(formData.marido_data_nascimento) ? formData.marido_data_nascimento : false,
       x_studio_marido_telefone: formData.marido_telefone?.trim() || '',
       x_studio_marido_batizado: Boolean(formData.marido_batizado),
       x_studio_marido_primeira_eucaristia: Boolean(formData.marido_primeira_eucaristia),
@@ -217,7 +217,7 @@ function criarAtualizacaoCadastral(formData) {
       // ========== DADOS DA ESPOSA ==========
       x_studio_esposa_nome: formData.esposa_nome.trim(),
       x_studio_esposa_nome_usual: formData.esposa_nome_usual?.trim() || '',
-      x_studio_esposa_data_nascimento: formData.esposa_data_nascimento,
+      x_studio_esposa_data_nascimento: formData.esposa_data_nascimento && /^\d{4}-\d{2}-\d{2}$/.test(formData.esposa_data_nascimento) ? formData.esposa_data_nascimento : false,
       x_studio_esposa_telefone: formData.esposa_telefone?.trim() || '',
       x_studio_esposa_batizado: Boolean(formData.esposa_batizado),
       x_studio_esposa_primeira_eucaristia: Boolean(formData.esposa_primeira_eucaristia),
@@ -225,7 +225,7 @@ function criarAtualizacaoCadastral(formData) {
 
       // ========== CASAMENTO ==========
       x_studio_casamento_religioso: Boolean(formData.casamento_religioso),
-      x_studio_data_casamento: formData.data_casamento || false,
+      x_studio_data_casamento: formData.data_casamento && /^\d{4}-\d{2}-\d{2}$/.test(formData.data_casamento) && formData.data_casamento !== '0000-00-00' ? formData.data_casamento : false,
 
       // ========== ENDEREÇO ==========
       x_studio_rua: formData.rua.trim(),

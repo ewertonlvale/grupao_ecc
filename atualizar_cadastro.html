@@ -1006,6 +1006,16 @@
             img.src = urlTemp;
         }
         
+        function validarData(dataStr) {
+            if (!dataStr || dataStr.length !== 10) return false;
+            var partes = dataStr.split('/');
+            if (partes.length !== 3) return false;
+            var dia = parseInt(partes[0]), mes = parseInt(partes[1]), ano = parseInt(partes[2]);
+            if (!dia || !mes || !ano || ano < 1900 || ano > 2100) return false;
+            var dt = new Date(ano, mes - 1, dia);
+            return dt.getFullYear() === ano && dt.getMonth() === mes - 1 && dt.getDate() === dia;
+        }
+        
         // ========================================
         // MÁSCARAS E VALIDAÇÕES
         // ========================================
@@ -1022,13 +1032,28 @@
         document.querySelectorAll('.data-nascimento').forEach(function(input) {
             input.addEventListener('input', function(e) {
                 let value = e.target.value.replace(/\D/g, '');
-                if (value.length >= 2) {
-                    value = value.slice(0, 2) + '/' + value.slice(2);
-                }
-                if (value.length >= 5) {
-                    value = value.slice(0, 5) + '/' + value.slice(5, 9);
-                }
+                if (value.length >= 2) value = value.slice(0, 2) + '/' + value.slice(2);
+                if (value.length >= 5) value = value.slice(0, 5) + '/' + value.slice(5, 9);
                 e.target.value = value;
+                e.target.classList.remove('is-invalid');
+                var fb = e.target.parentNode.querySelector('.invalid-feedback');
+                if (fb) fb.remove();
+            });
+            input.addEventListener('blur', function(e) {
+                var val = e.target.value.trim();
+                if (val && !validarData(val)) {
+                    e.target.classList.add('is-invalid');
+                    if (!e.target.parentNode.querySelector('.invalid-feedback')) {
+                        var fb = document.createElement('div');
+                        fb.className = 'invalid-feedback';
+                        fb.textContent = 'Data inválida. Use DD/MM/AAAA com uma data real.';
+                        e.target.parentNode.appendChild(fb);
+                    }
+                } else {
+                    e.target.classList.remove('is-invalid');
+                    var fb = e.target.parentNode.querySelector('.invalid-feedback');
+                    if (fb) fb.remove();
+                }
             });
         });
 
@@ -1107,10 +1132,14 @@
             
             // Converter datas de DD/MM/AAAA para YYYY-MM-DD
             function converterData(dataStr) {
-                if (!dataStr || dataStr.length !== 10) return dataStr;
+                if (!dataStr || dataStr.length !== 10) return '';
                 var partes = dataStr.split('/');
-                if (partes.length !== 3) return dataStr;
-                return partes[2] + '-' + partes[1] + '-' + partes[0];
+                if (partes.length !== 3) return '';
+                var dia = parseInt(partes[0]), mes = parseInt(partes[1]), ano = parseInt(partes[2]);
+                if (!dia || !mes || !ano || ano < 1900) return '';
+                var dt = new Date(ano, mes - 1, dia);
+                if (dt.getFullYear() !== ano || dt.getMonth() !== mes - 1 || dt.getDate() !== dia) return '';
+                return ano + '-' + partes[1] + '-' + partes[0];
             }
 
             data.marido_data_nascimento = converterData(data.marido_data_nascimento);
@@ -1146,6 +1175,19 @@
                     valido = false;
                 } else {
                     campo.classList.remove('is-invalid');
+                }
+            });
+            form.querySelectorAll('.data-nascimento').forEach(function(campo) {
+                var val = campo.value.trim();
+                if (val && !validarData(val)) {
+                    campo.classList.add('is-invalid');
+                    if (!campo.parentNode.querySelector('.invalid-feedback')) {
+                        var fb = document.createElement('div');
+                        fb.className = 'invalid-feedback';
+                        fb.textContent = 'Data inválida. Use DD/MM/AAAA com uma data real.';
+                        campo.parentNode.appendChild(fb);
+                    }
+                    valido = false;
                 }
             });
             return valido;
