@@ -318,8 +318,8 @@
         loading="eager"
     ></iframe>
 
-    <!-- Botão flutuante de push (só aparece se faz sentido) -->
-    <button class="push-cta" id="pushCta" type="button">
+    <!-- Botão flutuante de push (visível por padrão, escondido quando já inscrito/não suportado) -->
+    <button class="push-cta show" id="pushCta" type="button">
         <span aria-hidden="true">🔔</span>
         <span>Quer receber avisos?</span>
     </button>
@@ -356,67 +356,126 @@
         // Veja README_PUSH.md, passo 2.
         window.ONESIGNAL_APP_ID = 'c32ec6d9-f2c7-45ee-8278-6c50b7ed10f2';
 
+        // ================================================
+        // Push flow — botão "Quer receber avisos?"
+        // ================================================
+        // Estratégia: o botão começa VISÍVEL (classe .show no HTML).
+        // Só escondemos depois de confirmar que não faz sentido mostrar.
+        // Assim, se o SDK do OneSignal falhar em carregar, ou o App ID
+        // estiver errado, o botão ainda aparece — e clicar nele cai no
+        // fluxo nativo do browser via Notification.requestPermission().
+
+        const pushCta = document.getElementById('pushCta');
+
+        function esconderCta(motivo) {
+            console.log('[Push] Escondendo botão:', motivo);
+            pushCta.classList.remove('show');
+        }
+
+        function mostrarCta(motivo) {
+            console.log('[Push] Mostrando botão:', motivo);
+            pushCta.classList.add('show');
+        }
+
+        // Se o navegador nem tem API de push, esconde já.
+        if (!('Notification' in window) || !('serviceWorker' in navigator)) {
+            esconderCta('navegador sem API de push/SW');
+        } else if (Notification.permission === 'denied') {
+            esconderCta('usuário bloqueou no browser');
+        } else if (Notification.permission === 'granted') {
+            // Já deu permissão antes — OneSignal provavelmente já tem a sub.
+            // Vamos confirmar via SDK quando ele carregar (abaixo).
+        }
+
         window.OneSignalDeferred = window.OneSignalDeferred || [];
         OneSignalDeferred.push(async function (OneSignal) {
-            if (!window.ONESIGNAL_APP_ID || window.ONESIGNAL_APP_ID.indexOf('COLE-AQUI') === 0) {
-                console.warn('[Push] OneSignal App ID não configurado. Notificações desabilitadas.');
+            const configurado = window.ONESIGNAL_APP_ID &&
+                                window.ONESIGNAL_APP_ID.indexOf('COLE-AQUI') !== 0;
+
+            if (!configurado) {
+                console.warn('[Push] OneSignal App ID não configurado. ' +
+                             'O botão ainda aparece, mas clicar só pede permissão nativa.');
+                // NÃO return aqui — deixa o botão no fluxo nativo abaixo.
                 return;
             }
 
-            await OneSignal.init({
-                appId: window.ONESIGNAL_APP_ID,
-                serviceWorkerPath: 'sw.js',
-                serviceWorkerParam: { scope: './' },
-                allowLocalhostAsSecureOrigin: true
-                // autoPrompt desligado: usamos botão manual (#pushCta)
-            });
+            try {
+                await OneSignal.init({
+                    appId: window.ONESIGNAL_APP_ID,
+                    serviceWorkerPath: 'sw.js',
+                    serviceWorkerParam: { scope: './' },
+                    allowLocalhostAsSecureOrigin: true
+                });
+                console.log('[Push] OneSignal inicializado.');
+            } catch (e) {
+                console.error('[Push] Falha no init do OneSignal:', e);
+                return;
+            }
 
-            // ---- Botão manual de inscrição ----
-            const cta = document.getElementById('pushCta');
+            // Descobrir estado atual
+            function jaInscrito() {
+                try {
+                    return OneSignal.User &&
+                           OneSignal.User.PushSubscription &&
+                           OneSignal.User.PushSubscription.optedIn === true;
+                } catch (e) { return false; }
+            }
 
             function atualizarVisibilidadeCta() {
-                // Esconde o botão se:
-                //  - navegador não suporta push (ex: iOS Safari fora do PWA);
-                //  - usuário bloqueou notificação no nível do navegador;
-                //  - usuário já está inscrito.
-                const supported = OneSignal.Notifications.isPushSupported();
-                const native = OneSignal.Notifications.permissionNative; // 'default'|'granted'|'denied'
-                const optedIn = OneSignal.User.PushSubscription.optedIn;
-
-                if (!supported)           { cta.classList.remove('show'); return; }
-                if (native === 'denied')  { cta.classList.remove('show'); return; }
-                if (optedIn)              { cta.classList.remove('show'); return; }
-
-                cta.classList.add('show');
+                try {
+                    if (jaInscrito()) { esconderCta('já inscrito'); return; }
+                    if (Notification.permission === 'denied') {
+                        esconderCta('permissão negada'); return;
+                    }
+                    mostrarCta('estado: default/não inscrito');
+                } catch (e) {
+                    console.warn('[Push] Erro ao checar estado, mantendo botão visível:', e);
+                }
             }
 
             atualizarVisibilidadeCta();
 
-            // Reagir em tempo real quando o estado muda
-            OneSignal.User.PushSubscription.addEventListener('change', function() {
-                atualizarVisibilidadeCta();
-            });
-            OneSignal.Notifications.addEventListener('permissionChange', function() {
-                atualizarVisibilidadeCta();
-            });
+            // Reagir em tempo real a mudanças
+            try {
+                OneSignal.User.PushSubscription.addEventListener('change', atualizarVisibilidadeCta);
+            } catch (e) { /* API pode variar entre versões do SDK */ }
 
-            cta.addEventListener('click', async function() {
-                cta.disabled = true;
-                try {
-                    // Mostra o prompt nativo do browser. Se o usuário aceitar,
-                    // o SDK registra e optIn vira true automaticamente.
+            try {
+                OneSignal.Notifications.addEventListener('permissionChange', atualizarVisibilidadeCta);
+            } catch (e) { /* idem */ }
+
+            // Tag para segmentação (só se inscrito)
+            if (jaInscrito()) {
+                try { OneSignal.User.addTag('origem', 'catalogo_pwa'); } catch(e) {}
+            }
+        });
+
+        // Handler do clique — independente do OneSignal ter carregado ou não.
+        // Se o SDK estiver pronto e configurado, ele captura a subscription.
+        // Se não, pelo menos pede a permissão nativa (e o SDK pega depois).
+        pushCta.addEventListener('click', async function() {
+            pushCta.disabled = true;
+            try {
+                if (window.OneSignal && OneSignal.Notifications &&
+                    typeof OneSignal.Notifications.requestPermission === 'function') {
                     await OneSignal.Notifications.requestPermission();
-                    // Garantia extra: pede pra SDK entrar em opt-in
-                    await OneSignal.User.PushSubscription.optIn();
-                    // Tag pra segmentação
-                    OneSignal.User.addTag('origem', 'catalogo_pwa');
-                } catch (e) {
-                    console.warn('[Push] Falha ao solicitar permissão:', e);
-                } finally {
-                    cta.disabled = false;
-                    atualizarVisibilidadeCta();
+                    try { await OneSignal.User.PushSubscription.optIn(); } catch(e) {}
+                    try { OneSignal.User.addTag('origem', 'catalogo_pwa'); } catch(e) {}
+                } else {
+                    // Fallback bruto: pede permissão nativa direto.
+                    const result = await Notification.requestPermission();
+                    console.log('[Push] Permissão nativa:', result);
                 }
-            });
+            } catch (e) {
+                console.warn('[Push] Falha ao solicitar permissão:', e);
+            } finally {
+                pushCta.disabled = false;
+                // Reavalia — se concedida, esconde; se negada, também esconde.
+                if (Notification.permission === 'granted' ||
+                    Notification.permission === 'denied') {
+                    esconderCta('pós-click: permission=' + Notification.permission);
+                }
+            }
         });
     </script>
 
