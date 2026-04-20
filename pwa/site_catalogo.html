@@ -4,51 +4,82 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
 
-    <!-- PWA essentials -->
-    <meta name="theme-color" content="#1B2A4A">
+    <!-- ============ PWA CORE ============ -->
+    <meta name="theme-color" content="#8B2E2E">
+    <meta name="background-color" content="#8B2E2E">
     <meta name="mobile-web-app-capable" content="yes">
+    <meta name="application-name" content="Catálogo ECC">
+    <link rel="manifest" href="manifest.json">
+
+    <!-- Fontes rústicas/festivas -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Amatic+SC:wght@700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- ============ iOS STANDALONE ============ -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Catálogo ECC">
-    <meta name="application-name" content="Catálogo ECC">
 
     <title>Catálogo da Comunidade — ECC</title>
 
-    <!-- Manifest + Ícones -->
-    <link rel="manifest" href="manifest.json">
-    <link rel="icon" type="image/png" href="favicon.png">
+    <!-- Favicons e ícones (inclui PWA + iOS + fallback) -->
+    <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
     <link rel="shortcut icon" type="image/png" href="favicon.png">
-    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
 
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
+        :root {
+            --red:        #8B2E2E;
+            --red-dark:   #6B1F1F;
+            --red-deep:   #5A1616;
+            --beige:      #F5E6D3;
+            --beige-light:#FBF3E5;
+            --cream:      #FFF8EA;
+            --yellow:     #E8B84E;
+            --yellow-light:#F4D06F;
+            --brown:      #6B3E2E;
+        }
+
         body, html {
             height: 100%;
             overflow: hidden;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            font-family: 'Source Sans 3', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            /* Evitar que o conteúdo vá para trás da status bar no iOS standalone */
+            padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+            background: var(--red);
         }
 
-        /* Safe-area iOS (notch) */
-        body {
-            padding-top: env(safe-area-inset-top);
-            padding-bottom: env(safe-area-inset-bottom);
-            background: #1B2A4A;
-        }
-
-        /* Loading Spinner */
+        /* Loading Spinner (feijoada) */
         #loading {
             position: fixed;
             top: 0; left: 0;
             width: 100%; height: 100%;
-            background: linear-gradient(135deg, #1B2A4A 0%, #2C3E6B 60%, #3D5289 100%);
+            background:
+                radial-gradient(ellipse at 20% 20%, rgba(232, 184, 78, 0.18) 0%, transparent 55%),
+                radial-gradient(ellipse at 80% 80%, rgba(90, 22, 22, 0.30) 0%, transparent 55%),
+                linear-gradient(135deg, var(--red) 0%, var(--red-dark) 60%, var(--red-deep) 100%);
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            color: #FAF6F0;
+            color: var(--cream);
             z-index: 9999;
             transition: opacity 0.5s ease;
+        }
+        #loading::before {
+            content: '';
+            position: absolute; inset: 0;
+            background:
+                repeating-linear-gradient(45deg,
+                    rgba(255,248,234,0.02) 0px,
+                    rgba(255,248,234,0.02) 12px,
+                    transparent 12px, transparent 26px);
+            pointer-events: none;
         }
 
         #loading.hide {
@@ -56,53 +87,109 @@
             pointer-events: none;
         }
 
+        .loading-emoji {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            animation: bounce 1.2s ease-in-out infinite;
+            position: relative; z-index: 2;
+        }
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50%      { transform: translateY(-12px); }
+        }
+
         .spinner {
             width: 50px; height: 50px;
-            border: 5px solid rgba(250, 246, 240, 0.2);
-            border-top-color: #C8963E;
+            border: 5px solid rgba(255, 248, 234, 0.18);
+            border-top-color: var(--yellow);
             border-radius: 50%;
             animation: spin 1s linear infinite;
+            position: relative; z-index: 2;
         }
 
         @keyframes spin { to { transform: rotate(360deg); } }
 
+        .loading-title {
+            margin-top: 22px;
+            font-family: 'Amatic SC', cursive;
+            font-weight: 700;
+            font-size: 2rem;
+            letter-spacing: 1.5px;
+            color: var(--yellow);
+            position: relative; z-index: 2;
+        }
         .loading-text {
-            margin-top: 20px;
-            font-size: 18px;
+            margin-top: 4px;
+            font-size: 0.92rem;
             font-weight: 500;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.4px;
+            opacity: 0.85;
+            position: relative; z-index: 2;
         }
 
-        /* Botão Voltar (some em modo standalone) */
+        /* Botão Voltar (some quando é standalone PWA — não tem para onde voltar) */
         .back-button {
             position: fixed;
             top: calc(20px + env(safe-area-inset-top));
-            left: 20px;
+            left: calc(20px + env(safe-area-inset-left));
             z-index: 1000;
-            background: #FAF6F0;
-            color: #1B2A4A;
-            border: none;
-            padding: 12px 24px;
+            background: var(--cream);
+            color: var(--red-deep);
+            border: 1.5px solid var(--yellow);
+            padding: 10px 20px;
             border-radius: 50px;
-            font-size: 16px;
-            font-weight: 600;
+            font-size: 0.95rem;
+            font-weight: 700;
             cursor: pointer;
-            box-shadow: 0 4px 15px rgba(27, 42, 74, 0.2);
+            box-shadow: 0 4px 14px rgba(91, 22, 22, 0.22);
             transition: all 0.3s;
             text-decoration: none;
             display: inline-flex;
             align-items: center;
             gap: 8px;
+            font-family: inherit;
         }
 
         .back-button:hover {
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(27, 42, 74, 0.3);
-            background: #C8963E;
-            color: #FFFFFF;
+            box-shadow: 0 6px 20px rgba(91, 22, 22, 0.35);
+            background: var(--yellow);
+            color: var(--red-deep);
         }
 
-        @media (display-mode: standalone) {
+        /* Botão Patrocinadores */
+        .sponsor-button {
+            position: fixed;
+            top: calc(20px + env(safe-area-inset-top));
+            right: calc(20px + env(safe-area-inset-right));
+            z-index: 1000;
+            background: var(--yellow);
+            color: var(--red-deep);
+            border: none;
+            padding: 10px 18px;
+            border-radius: 50px;
+            font-size: 0.88rem;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 4px 14px rgba(232, 184, 78, 0.45);
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-family: inherit;
+        }
+        .sponsor-button:hover {
+            transform: translateY(-2px);
+            background: var(--yellow-light);
+            box-shadow: 0 6px 20px rgba(232, 184, 78, 0.55);
+        }
+
+        /* Esconde o botão voltar quando rodando como PWA (standalone) */
+        @media all and (display-mode: standalone) {
+            .back-button { display: none; }
+        }
+        @media all and (display-mode: fullscreen) {
             .back-button { display: none; }
         }
 
@@ -113,91 +200,50 @@
             display: block;
             -webkit-overflow-scrolling: touch;
             overflow: auto;
+            background: var(--beige);
         }
 
-        /* Banner "Instalar app" (Android) */
+        /* ============ Banner de instalação (Android/Desktop) ============ */
         .install-banner {
             display: none;
             position: fixed;
             bottom: calc(20px + env(safe-area-inset-bottom));
-            left: 20px; right: 20px;
-            z-index: 9998;
-            background: #1B2A4A;
-            color: #FAF6F0;
-            padding: 16px 20px;
-            border-radius: 16px;
-            box-shadow: 0 8px 30px rgba(0,0,0,0.3);
-            align-items: center;
-            gap: 14px;
-        }
-        .install-banner.show { display: flex; }
-        .install-banner img {
-            width: 48px; height: 48px;
-            border-radius: 12px;
-            flex-shrink: 0;
-        }
-        .install-banner .text {
-            flex: 1;
-            font-size: 0.92rem;
-            line-height: 1.3;
-        }
-        .install-banner .text strong { display: block; margin-bottom: 2px; }
-        .install-banner .btn {
-            background: #C8963E;
-            color: #FFFFFF;
-            border: none;
-            padding: 10px 18px;
-            border-radius: 20px;
-            font-size: 0.88rem;
-            font-weight: 600;
-            cursor: pointer;
-            flex-shrink: 0;
-        }
-        .install-banner .close {
-            background: transparent;
-            color: #FAF6F0;
-            border: none;
-            font-size: 1.4rem;
-            cursor: pointer;
-            padding: 4px 8px;
-            opacity: 0.6;
-        }
-        @media (display-mode: standalone) {
-            .install-banner { display: none !important; }
-        }
-
-        /* Botão flutuante "Quer receber avisos?" */
-        .push-cta {
-            display: none; /* ligado via .show só quando faz sentido */
-            position: fixed;
-            bottom: calc(20px + env(safe-area-inset-bottom));
-            right: 20px;
-            z-index: 9997;
-            background: #C8963E;
-            color: #FFFFFF;
-            border: none;
-            padding: 12px 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10001;
+            background: var(--cream);
+            color: var(--red-deep);
+            padding: 14px 22px;
             border-radius: 50px;
-            font-size: 0.95rem;
+            box-shadow: 0 8px 30px rgba(91, 22, 22, 0.3);
+            font-size: 15px;
             font-weight: 600;
+            max-width: 92vw;
+            animation: slideUp 0.4s ease;
+            border: 2px solid var(--yellow);
+        }
+        .install-banner.show { display: flex; align-items: center; gap: 14px; }
+        .install-banner .dismiss {
+            background: transparent;
+            color: var(--brown);
+            border: none;
+            font-size: 22px;
+            line-height: 1;
             cursor: pointer;
-            box-shadow: 0 6px 20px rgba(27, 42, 74, 0.35);
-            transition: all 0.25s ease;
+            padding: 0 2px;
+        }
+        .install-banner .install-btn {
+            background: var(--red);
+            color: var(--cream);
+            border: none;
+            padding: 8px 18px;
+            border-radius: 50px;
+            font-weight: 700;
+            font-size: 14px;
+            cursor: pointer;
             font-family: inherit;
-            align-items: center;
-            gap: 8px;
         }
-        .push-cta.show { display: inline-flex; }
-        .push-cta:hover {
-            background: #E8C87A;
-            color: #1B2A4A;
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(27, 42, 74, 0.45);
-        }
-        .push-cta:disabled {
-            opacity: 0.6;
-            cursor: wait;
-        }
+        .install-banner .install-btn:hover { background: var(--red-dark); }
 
         /* Banner LGPD */
         .lgpd-banner {
@@ -205,20 +251,20 @@
             position: fixed;
             bottom: 0; left: 0; right: 0;
             z-index: 10000;
-            background: rgba(27, 42, 74, 0.97);
+            background: rgba(90, 22, 22, 0.97);
             backdrop-filter: blur(10px);
-            color: #FAF6F0;
-            padding: 20px;
-            padding-bottom: calc(20px + env(safe-area-inset-bottom));
+            color: var(--cream);
+            padding: calc(20px + env(safe-area-inset-bottom)) 20px 20px;
             box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
             animation: slideUp 0.4s ease;
+            border-top: 3px solid var(--yellow);
         }
 
         .lgpd-banner.show { display: block; }
 
         @keyframes slideUp {
-            from { transform: translateY(100%); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
+            from { transform: translate(-50%, 100%); opacity: 0; }
+            to { transform: translate(-50%, 0); opacity: 1; }
         }
 
         .lgpd-content {
@@ -254,25 +300,25 @@
         }
 
         .lgpd-btn-accept {
-            background: #C8963E;
-            color: #FFFFFF;
+            background: var(--yellow);
+            color: var(--red-deep);
         }
 
         .lgpd-btn-accept:hover {
-            background: #E8C87A;
-            color: #1B2A4A;
+            background: var(--yellow-light);
+            color: var(--red-deep);
             transform: translateY(-1px);
         }
 
         .lgpd-btn-reject {
             background: transparent;
-            color: #FAF6F0;
-            border: 2px solid rgba(250, 246, 240, 0.5);
+            color: var(--cream);
+            border: 2px solid rgba(255, 248, 234, 0.55);
         }
 
         .lgpd-btn-reject:hover {
-            border-color: #FAF6F0;
-            background: rgba(250, 246, 240, 0.1);
+            border-color: var(--cream);
+            background: rgba(255, 248, 234, 0.1);
         }
 
         /* Mobile */
@@ -302,12 +348,17 @@
 <body>
     <!-- Loading Spinner -->
     <div id="loading">
+        <div class="loading-emoji">🫘</div>
         <div class="spinner"></div>
-        <div class="loading-text">Carregando Catálogo da Comunidade...</div>
+        <div class="loading-title">Catálogo da Comunidade</div>
+        <div class="loading-text">Tempero caseiro carregando…</div>
     </div>
 
-    <!-- Botão Voltar (não aparece em modo standalone/instalado) -->
-    <a href="index.html" class="back-button">← Voltar ao Menu</a>
+    <!-- Botão Voltar (só no navegador, não no PWA instalado) -->
+    <a href="index.html" class="back-button">← Menu</a>
+
+    <!-- Botão Patrocinadores (sempre visível) -->
+    <a href="patrocinadores.html" class="sponsor-button">🫘 Patrocinadores</a>
 
     <!-- iFrame Principal -->
     <iframe
@@ -318,21 +369,11 @@
         loading="eager"
     ></iframe>
 
-    <!-- Botão flutuante de push (visível por padrão, escondido quando já inscrito/não suportado) -->
-    <button class="push-cta show" id="pushCta" type="button">
-        <span aria-hidden="true">🔔</span>
-        <span>Quer receber avisos?</span>
-    </button>
-
-    <!-- Banner Instalar (Android/desktop) -->
+    <!-- Banner de instalação (Android/Chrome desktop) -->
     <div class="install-banner" id="installBanner">
-        <img src="icon-192.png" alt="">
-        <div class="text">
-            <strong>Instale o Catálogo</strong>
-            Abra direto da tela inicial, sem navegador
-        </div>
-        <button class="btn" id="installBtn">Instalar</button>
-        <button class="close" id="installClose" aria-label="Fechar">×</button>
+        <span>📲 Instalar na tela inicial</span>
+        <button class="install-btn" id="installBtn">Instalar</button>
+        <button class="dismiss" id="installDismiss" aria-label="Fechar">×</button>
     </div>
 
     <!-- Banner LGPD -->
@@ -349,137 +390,6 @@
         </div>
     </div>
 
-    <!-- ========== OneSignal Web SDK v16 ========== -->
-    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
-    <script>
-        // CONFIGURAÇÃO: troque ONESIGNAL_APP_ID pelo valor do painel.
-        // Veja README_PUSH.md, passo 2.
-        window.ONESIGNAL_APP_ID = 'c32ec6d9-f2c7-45ee-8278-6c50b7ed10f2';
-
-        // ================================================
-        // Push flow — botão "Quer receber avisos?"
-        // ================================================
-        // Estratégia: o botão começa VISÍVEL (classe .show no HTML).
-        // Só escondemos depois de confirmar que não faz sentido mostrar.
-        // Assim, se o SDK do OneSignal falhar em carregar, ou o App ID
-        // estiver errado, o botão ainda aparece — e clicar nele cai no
-        // fluxo nativo do browser via Notification.requestPermission().
-
-        const pushCta = document.getElementById('pushCta');
-
-        function esconderCta(motivo) {
-            console.log('[Push] Escondendo botão:', motivo);
-            pushCta.classList.remove('show');
-        }
-
-        function mostrarCta(motivo) {
-            console.log('[Push] Mostrando botão:', motivo);
-            pushCta.classList.add('show');
-        }
-
-        // Se o navegador nem tem API de push, esconde já.
-        if (!('Notification' in window) || !('serviceWorker' in navigator)) {
-            esconderCta('navegador sem API de push/SW');
-        } else if (Notification.permission === 'denied') {
-            esconderCta('usuário bloqueou no browser');
-        } else if (Notification.permission === 'granted') {
-            // Já deu permissão antes — OneSignal provavelmente já tem a sub.
-            // Vamos confirmar via SDK quando ele carregar (abaixo).
-        }
-
-        window.OneSignalDeferred = window.OneSignalDeferred || [];
-        OneSignalDeferred.push(async function (OneSignal) {
-            const configurado = window.ONESIGNAL_APP_ID &&
-                                window.ONESIGNAL_APP_ID.indexOf('COLE-AQUI') !== 0;
-
-            if (!configurado) {
-                console.warn('[Push] OneSignal App ID não configurado. ' +
-                             'O botão ainda aparece, mas clicar só pede permissão nativa.');
-                // NÃO return aqui — deixa o botão no fluxo nativo abaixo.
-                return;
-            }
-
-            try {
-                await OneSignal.init({
-                    appId: window.ONESIGNAL_APP_ID,
-                    allowLocalhostAsSecureOrigin: true
-                    // SW: OneSignal v16 em "Typical Site" busca
-                    // OneSignalSDKWorker.js na raiz do site. Não tente
-                    // customizar via serviceWorkerPath aqui — não é honrado.
-                });
-                console.log('[Push] OneSignal inicializado.');
-            } catch (e) {
-                console.error('[Push] Falha no init do OneSignal:', e);
-                return;
-            }
-
-            // Descobrir estado atual
-            function jaInscrito() {
-                try {
-                    return OneSignal.User &&
-                           OneSignal.User.PushSubscription &&
-                           OneSignal.User.PushSubscription.optedIn === true;
-                } catch (e) { return false; }
-            }
-
-            function atualizarVisibilidadeCta() {
-                try {
-                    if (jaInscrito()) { esconderCta('já inscrito'); return; }
-                    if (Notification.permission === 'denied') {
-                        esconderCta('permissão negada'); return;
-                    }
-                    mostrarCta('estado: default/não inscrito');
-                } catch (e) {
-                    console.warn('[Push] Erro ao checar estado, mantendo botão visível:', e);
-                }
-            }
-
-            atualizarVisibilidadeCta();
-
-            // Reagir em tempo real a mudanças
-            try {
-                OneSignal.User.PushSubscription.addEventListener('change', atualizarVisibilidadeCta);
-            } catch (e) { /* API pode variar entre versões do SDK */ }
-
-            try {
-                OneSignal.Notifications.addEventListener('permissionChange', atualizarVisibilidadeCta);
-            } catch (e) { /* idem */ }
-
-            // Tag para segmentação (só se inscrito)
-            if (jaInscrito()) {
-                try { OneSignal.User.addTag('origem', 'catalogo_pwa'); } catch(e) {}
-            }
-        });
-
-        // Handler do clique — independente do OneSignal ter carregado ou não.
-        // Se o SDK estiver pronto e configurado, ele captura a subscription.
-        // Se não, pelo menos pede a permissão nativa (e o SDK pega depois).
-        pushCta.addEventListener('click', async function() {
-            pushCta.disabled = true;
-            try {
-                if (window.OneSignal && OneSignal.Notifications &&
-                    typeof OneSignal.Notifications.requestPermission === 'function') {
-                    await OneSignal.Notifications.requestPermission();
-                    try { await OneSignal.User.PushSubscription.optIn(); } catch(e) {}
-                    try { OneSignal.User.addTag('origem', 'catalogo_pwa'); } catch(e) {}
-                } else {
-                    // Fallback bruto: pede permissão nativa direto.
-                    const result = await Notification.requestPermission();
-                    console.log('[Push] Permissão nativa:', result);
-                }
-            } catch (e) {
-                console.warn('[Push] Falha ao solicitar permissão:', e);
-            } finally {
-                pushCta.disabled = false;
-                // Reavalia — se concedida, esconde; se negada, também esconde.
-                if (Notification.permission === 'granted' ||
-                    Notification.permission === 'denied') {
-                    esconderCta('pós-click: permission=' + Notification.permission);
-                }
-            }
-        });
-    </script>
-
     <script>
         // ========== LOADING ==========
         var iframe = document.getElementById('appFrame');
@@ -493,55 +403,57 @@
             if (!loading.classList.contains('hide')) loading.classList.add('hide');
         }, 10000);
 
-        // ========== SERVICE WORKER (registrado pelo OneSignal) ==========
-        // OBS: NÃO registramos sw.js manualmente aqui — o OneSignal.init() já
-        // registra o mesmo sw.js com o scope './'. Registrar duas vezes causa
-        // conflito e o push não funciona.
-
-        // ========== INSTALL BANNER (Android / desktop) ==========
-        var installPromptEvent = null;
-        var installBanner = document.getElementById('installBanner');
-        var INSTALL_KEY = 'ecc_install_dismissed_at';
-
-        function shouldShowInstall() {
-            var last = null;
-            try { last = localStorage.getItem(INSTALL_KEY); } catch(e) {}
-            if (!last) return true;
-            // cooldown de 7 dias
-            var daysAgo = (Date.now() - parseInt(last, 10)) / 86400000;
-            return daysAgo > 7;
+        // ========== SERVICE WORKER (PWA) ==========
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('sw.js')
+                    .then(function(reg) {
+                        console.log('[PWA] Service Worker registrado. Escopo:', reg.scope);
+                    })
+                    .catch(function(err) {
+                        console.warn('[PWA] Falha ao registrar Service Worker:', err);
+                    });
+            });
         }
+
+        // ========== INSTALL PROMPT (Android/Chrome) ==========
+        var deferredPrompt = null;
+        var installBanner = document.getElementById('installBanner');
+        var installBtn = document.getElementById('installBtn');
+        var installDismiss = document.getElementById('installDismiss');
+        var INSTALL_DISMISSED_KEY = 'ecc_install_dismissed';
 
         window.addEventListener('beforeinstallprompt', function(e) {
             e.preventDefault();
-            installPromptEvent = e;
-            if (shouldShowInstall()) {
-                setTimeout(function() {
-                    installBanner.classList.add('show');
-                }, 3000);
-            }
+            deferredPrompt = e;
+            // Só mostra se o usuário não fechou recentemente
+            try {
+                var dismissed = localStorage.getItem(INSTALL_DISMISSED_KEY);
+                var now = Date.now();
+                if (dismissed && (now - parseInt(dismissed, 10) < 7 * 24 * 3600 * 1000)) return;
+            } catch(err) {}
+            setTimeout(function() {
+                installBanner.classList.add('show');
+            }, 3000);
         });
 
-        document.getElementById('installBtn').addEventListener('click', async function() {
-            if (!installPromptEvent) return;
-            installBanner.classList.remove('show');
-            installPromptEvent.prompt();
-            var result = await installPromptEvent.userChoice;
-            if (result.outcome === 'accepted') {
-                console.log('[PWA] Usuário instalou o app.');
-            }
-            installPromptEvent = null;
-            try { localStorage.setItem(INSTALL_KEY, Date.now().toString()); } catch(e) {}
+        installBtn.addEventListener('click', function() {
+            if (!deferredPrompt) return;
+            deferredPrompt.prompt();
+            deferredPrompt.userChoice.then(function() {
+                deferredPrompt = null;
+                installBanner.classList.remove('show');
+            });
         });
 
-        document.getElementById('installClose').addEventListener('click', function() {
+        installDismiss.addEventListener('click', function() {
             installBanner.classList.remove('show');
-            try { localStorage.setItem(INSTALL_KEY, Date.now().toString()); } catch(e) {}
+            try { localStorage.setItem(INSTALL_DISMISSED_KEY, String(Date.now())); } catch(err) {}
         });
 
         window.addEventListener('appinstalled', function() {
+            console.log('[PWA] App instalado com sucesso.');
             installBanner.classList.remove('show');
-            console.log('[PWA] Instalação concluída.');
         });
 
         // ========== LGPD + ANALYTICS ==========
