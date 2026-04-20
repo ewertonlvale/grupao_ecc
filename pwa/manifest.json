@@ -1,0 +1,42 @@
+{
+  "name": "Catálogo da Comunidade — N. S. Conceição Aparecida",
+  "short_name": "Catálogo ECC",
+  "description": "Serviços e comércios dos paroquianos — apoie quem está perto de você.",
+  "start_url": "./site_catalogo.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#1B2A4A",
+  "theme_color": "#1B2A4A",
+  "lang": "pt-BR",
+  "dir": "ltr",
+  "categories": ["business", "lifestyle", "shopping"],
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Ver destaques",
+      "short_name": "Destaques",
+      "description": "Abrir o catálogo nos comércios em destaque",
+      "url": "./site_catalogo.html"
+    }
+  ]
+}
