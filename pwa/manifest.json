@@ -6,8 +6,8 @@
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait-primary",
-  "background_color": "#1B2A4A",
-  "theme_color": "#1B2A4A",
+  "background_color": "#8B2E2E",
+  "theme_color": "#8B2E2E",
   "lang": "pt-BR",
   "dir": "ltr",
   "categories": ["business", "lifestyle", "shopping"],
@@ -37,6 +37,12 @@
       "short_name": "Destaques",
       "description": "Abrir o catálogo nos comércios em destaque",
       "url": "./site_catalogo.html"
+    },
+    {
+      "name": "Patrocinadores da Feijoada",
+      "short_name": "Patrocinadores",
+      "description": "Cotas de patrocínio da Feijoada das Famílias",
+      "url": "./patrocinadores.html"
     }
   ]
 }
