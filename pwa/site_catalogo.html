@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
+
+    <!-- ============ PWA CORE ============ -->
+    <meta name="theme-color" content="#1B2A4A">
+    <meta name="background-color" content="#1B2A4A">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="application-name" content="Catálogo ECC">
+    <link rel="manifest" href="manifest.json">
+
+    <!-- ============ iOS STANDALONE ============ -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Catálogo ECC">
+
+    <title>Catálogo da Comunidade — ECC</title>
+
+    <!-- Favicons e ícones (inclui PWA + iOS + fallback) -->
+    <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
+    <link rel="shortcut icon" type="image/png" href="favicon.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body, html {
+            height: 100%;
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            /* Evitar que o conteúdo vá para trás da status bar no iOS standalone */
+            padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+            background: #1B2A4A;
+        }
+
+        /* Loading Spinner */
+        #loading {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: linear-gradient(135deg, #1B2A4A 0%, #2C3E6B 60%, #3D5289 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: #FAF6F0;
+            z-index: 9999;
+            transition: opacity 0.5s ease;
+        }
+
+        #loading.hide {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .spinner {
+            width: 50px; height: 50px;
+            border: 5px solid rgba(250, 246, 240, 0.2);
+            border-top-color: #C8963E;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .loading-text {
+            margin-top: 20px;
+            font-size: 18px;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+        }
+
+        /* Botão Voltar (some quando é standalone PWA — não tem para onde voltar) */
+        .back-button {
+            position: fixed;
+            top: calc(20px + env(safe-area-inset-top));
+            left: calc(20px + env(safe-area-inset-left));
+            z-index: 1000;
+            background: #FAF6F0;
+            color: #1B2A4A;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 50px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(27, 42, 74, 0.2);
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .back-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(27, 42, 74, 0.3);
+            background: #C8963E;
+            color: #FFFFFF;
+        }
+
+        /* Esconde o botão voltar quando rodando como PWA (standalone) */
+        @media all and (display-mode: standalone) {
+            .back-button { display: none; }
+        }
+        @media all and (display-mode: fullscreen) {
+            .back-button { display: none; }
+        }
+
+        /* iFrame */
+        #appFrame {
+            width: 100%; height: 100%;
+            border: none;
+            display: block;
+            -webkit-overflow-scrolling: touch;
+            overflow: auto;
+        }
+
+        /* ============ Banner de instalação (Android/Desktop) ============ */
+        .install-banner {
+            display: none;
+            position: fixed;
+            bottom: calc(20px + env(safe-area-inset-bottom));
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10001;
+            background: #FAF6F0;
+            color: #1B2A4A;
+            padding: 14px 22px;
+            border-radius: 50px;
+            box-shadow: 0 8px 30px rgba(27, 42, 74, 0.3);
+            font-size: 15px;
+            font-weight: 600;
+            max-width: 92vw;
+            animation: slideUp 0.4s ease;
+        }
+        .install-banner.show { display: flex; align-items: center; gap: 14px; }
+        .install-banner .dismiss {
+            background: transparent;
+            color: #7A7A7A;
+            border: none;
+            font-size: 22px;
+            line-height: 1;
+            cursor: pointer;
+            padding: 0 2px;
+        }
+        .install-banner .install-btn {
+            background: #C8963E;
+            color: #FFFFFF;
+            border: none;
+            padding: 8px 18px;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        .install-banner .install-btn:hover { background: #E8C87A; color: #1B2A4A; }
+
+        /* Banner LGPD */
+        .lgpd-banner {
+            display: none;
+            position: fixed;
+            bottom: 0; left: 0; right: 0;
+            z-index: 10000;
+            background: rgba(27, 42, 74, 0.97);
+            backdrop-filter: blur(10px);
+            color: #FAF6F0;
+            padding: calc(20px + env(safe-area-inset-bottom)) 20px 20px;
+            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
+            animation: slideUp 0.4s ease;
+        }
+
+        .lgpd-banner.show { display: block; }
+
+        @keyframes slideUp {
+            from { transform: translate(-50%, 100%); opacity: 0; }
+            to { transform: translate(-50%, 0); opacity: 1; }
+        }
+
+        .lgpd-content {
+            max-width: 900px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .lgpd-text {
+            flex: 1;
+            min-width: 250px;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        .lgpd-buttons {
+            display: flex;
+            gap: 10px;
+            flex-shrink: 0;
+        }
+
+        .lgpd-btn {
+            padding: 10px 24px;
+            border-radius: 25px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: all 0.3s;
+        }
+
+        .lgpd-btn-accept {
+            background: #C8963E;
+            color: #FFFFFF;
+        }
+
+        .lgpd-btn-accept:hover {
+            background: #E8C87A;
+            color: #1B2A4A;
+            transform: translateY(-1px);
+        }
+
+        .lgpd-btn-reject {
+            background: transparent;
+            color: #FAF6F0;
+            border: 2px solid rgba(250, 246, 240, 0.5);
+        }
+
+        .lgpd-btn-reject:hover {
+            border-color: #FAF6F0;
+            background: rgba(250, 246, 240, 0.1);
+        }
+
+        /* Mobile */
+        @media (max-width: 768px) {
+            body, html {
+                overflow: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            #appFrame {
+                pointer-events: auto;
+                touch-action: pan-y;
+            }
+
+            .lgpd-content {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .lgpd-buttons {
+                justify-content: center;
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Spinner -->
+    <div id="loading">
+        <div class="spinner"></div>
+        <div class="loading-text">Carregando Catálogo da Comunidade...</div>
+    </div>
+
+    <!-- Botão Voltar (só no navegador, não no PWA instalado) -->
+    <a href="index.html" class="back-button">← Voltar ao Menu</a>
+
+    <!-- iFrame Principal -->
+    <iframe
+        id="appFrame"
+        src="https://script.google.com/macros/s/AKfycbwo8jU4yLGuVVFhZT8aM0Ga3QwSwSEyyXprVGkZH22z9k8aMwjtggSPQrIQzt9lQayZ/exec?page=catalogo"
+        title="Catálogo da Comunidade - ECC"
+        allowfullscreen
+        loading="eager"
+    ></iframe>
+
+    <!-- Banner de instalação (Android/Chrome desktop) -->
+    <div class="install-banner" id="installBanner">
+        <span>📲 Instalar na tela inicial</span>
+        <button class="install-btn" id="installBtn">Instalar</button>
+        <button class="dismiss" id="installDismiss" aria-label="Fechar">×</button>
+    </div>
+
+    <!-- Banner LGPD -->
+    <div class="lgpd-banner" id="lgpdBanner">
+        <div class="lgpd-content">
+            <div class="lgpd-text">
+                🍪 Este site utiliza cookies para análise de uso e melhorias.
+                Seus dados não são compartilhados com terceiros.
+            </div>
+            <div class="lgpd-buttons">
+                <button class="lgpd-btn lgpd-btn-accept" id="lgpdAccept">Aceitar</button>
+                <button class="lgpd-btn lgpd-btn-reject" id="lgpdReject">Recusar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ========== LOADING ==========
+        var iframe = document.getElementById('appFrame');
+        var loading = document.getElementById('loading');
+
+        iframe.addEventListener('load', function() {
+            setTimeout(function() { loading.classList.add('hide'); }, 500);
+        });
+
+        setTimeout(function() {
+            if (!loading.classList.contains('hide')) loading.classList.add('hide');
+        }, 10000);
+
+        // ========== SERVICE WORKER (PWA) ==========
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('sw.js')
+                    .then(function(reg) {
+                        console.log('[PWA] Service Worker registrado. Escopo:', reg.scope);
+                    })
+                    .catch(function(err) {
+                        console.warn('[PWA] Falha ao registrar Service Worker:', err);
+                    });
+            });
+        }
+
+        // ========== INSTALL PROMPT (Android/Chrome) ==========
+        var deferredPrompt = null;
+        var installBanner = document.getElementById('installBanner');
+        var installBtn = document.getElementById('installBtn');
+        var installDismiss = document.getElementById('installDismiss');
+        var INSTALL_DISMISSED_KEY = 'ecc_install_dismissed';
+
+        window.addEventListener('beforeinstallprompt', function(e) {
+            e.preventDefault();
+            deferredPrompt = e;
+            // Só mostra se o usuário não fechou recentemente
+            try {
+                var dismissed = localStorage.getItem(INSTALL_DISMISSED_KEY);
+                var now = Date.now();
+                if (dismissed && (now - parseInt(dismissed, 10) < 7 * 24 * 3600 * 1000)) return;
+            } catch(err) {}
+            setTimeout(function() {
+                installBanner.classList.add('show');
+            }, 3000);
+        });
+
+        installBtn.addEventListener('click', function() {
+            if (!deferredPrompt) return;
+            deferredPrompt.prompt();
+            deferredPrompt.userChoice.then(function() {
+                deferredPrompt = null;
+                installBanner.classList.remove('show');
+            });
+        });
+
+        installDismiss.addEventListener('click', function() {
+            installBanner.classList.remove('show');
+            try { localStorage.setItem(INSTALL_DISMISSED_KEY, String(Date.now())); } catch(err) {}
+        });
+
+        window.addEventListener('appinstalled', function() {
+            console.log('[PWA] App instalado com sucesso.');
+            installBanner.classList.remove('show');
+        });
+
+        // ========== LGPD + ANALYTICS ==========
+        var GA_ID = 'G-5VFSZQS0H8';
+        var LGPD_KEY = 'ecc_lgpd_consent';
+
+        function getConsent() {
+            try { return localStorage.getItem(LGPD_KEY); } catch(e) { return null; }
+        }
+
+        function setConsent(v) {
+            try { localStorage.setItem(LGPD_KEY, v); } catch(e) {}
+        }
+
+        function loadGA() {
+            if (document.querySelector('script[src*="googletagmanager"]')) return;
+            var s = document.createElement('script');
+            s.async = true;
+            s.src = 'https://www.googletagmanager.com/gtag/js?id=' + GA_ID;
+            document.head.appendChild(s);
+            window.dataLayer = window.dataLayer || [];
+            function gtag() { window.dataLayer.push(arguments); }
+            window.gtag = gtag;
+            gtag('js', new Date());
+            gtag('config', GA_ID);
+        }
+
+        function removeGACookies() {
+            ['_ga','_gid','_gat'].forEach(function(n) {
+                document.cookie = n + '=;expires=Thu,01 Jan 1970 00:00:00 UTC;path=/;';
+                document.cookie = n + '=;expires=Thu,01 Jan 1970 00:00:00 UTC;path=/;domain=.' + location.hostname;
+            });
+        }
+
+        var consent = getConsent();
+        if (consent === 'accepted') {
+            loadGA();
+        } else if (consent === null) {
+            setTimeout(function() {
+                document.getElementById('lgpdBanner').classList.add('show');
+            }, 1000);
+        }
+
+        document.getElementById('lgpdAccept').addEventListener('click', function() {
+            setConsent('accepted');
+            loadGA();
+            document.getElementById('lgpdBanner').classList.remove('show');
+        });
+
+        document.getElementById('lgpdReject').addEventListener('click', function() {
+            setConsent('rejected');
+            removeGACookies();
+            document.getElementById('lgpdBanner').classList.remove('show');
+        });
+    </script>
+</body>
+</html>
