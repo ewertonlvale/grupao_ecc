@@ -166,6 +166,39 @@
             .install-banner { display: none !important; }
         }
 
+        /* Botão flutuante "Quer receber avisos?" */
+        .push-cta {
+            display: none; /* ligado via .show só quando faz sentido */
+            position: fixed;
+            bottom: calc(20px + env(safe-area-inset-bottom));
+            right: 20px;
+            z-index: 9997;
+            background: #C8963E;
+            color: #FFFFFF;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 50px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 6px 20px rgba(27, 42, 74, 0.35);
+            transition: all 0.25s ease;
+            font-family: inherit;
+            align-items: center;
+            gap: 8px;
+        }
+        .push-cta.show { display: inline-flex; }
+        .push-cta:hover {
+            background: #E8C87A;
+            color: #1B2A4A;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(27, 42, 74, 0.45);
+        }
+        .push-cta:disabled {
+            opacity: 0.6;
+            cursor: wait;
+        }
+
         /* Banner LGPD */
         .lgpd-banner {
             display: none;
@@ -285,6 +318,12 @@
         loading="eager"
     ></iframe>
 
+    <!-- Botão flutuante de push (só aparece se faz sentido) -->
+    <button class="push-cta" id="pushCta" type="button">
+        <span aria-hidden="true">🔔</span>
+        <span>Quer receber avisos?</span>
+    </button>
+
     <!-- Banner Instalar (Android/desktop) -->
     <div class="install-banner" id="installBanner">
         <img src="icon-192.png" alt="">
@@ -323,29 +362,61 @@
                 console.warn('[Push] OneSignal App ID não configurado. Notificações desabilitadas.');
                 return;
             }
+
             await OneSignal.init({
                 appId: window.ONESIGNAL_APP_ID,
                 serviceWorkerPath: 'sw.js',
                 serviceWorkerParam: { scope: './' },
-                allowLocalhostAsSecureOrigin: true,
-                promptOptions: {
-                    slidedown: {
-                        prompts: [{
-                            type: 'push',
-                            autoPrompt: true,
-                            text: {
-                                actionMessage: 'Quer receber avisos de novos comércios e promoções da comunidade?',
-                                acceptButton: 'Sim, quero',
-                                cancelButton: 'Agora não'
-                            },
-                            delay: { pageViews: 1, timeDelay: 8 } // aparece após 8s
-                        }]
-                    }
-                }
+                allowLocalhostAsSecureOrigin: true
+                // autoPrompt desligado: usamos botão manual (#pushCta)
             });
 
-            // Tag do usuário (útil para segmentar no painel)
-            OneSignal.User.addTag('origem', 'catalogo_pwa');
+            // ---- Botão manual de inscrição ----
+            const cta = document.getElementById('pushCta');
+
+            function atualizarVisibilidadeCta() {
+                // Esconde o botão se:
+                //  - navegador não suporta push (ex: iOS Safari fora do PWA);
+                //  - usuário bloqueou notificação no nível do navegador;
+                //  - usuário já está inscrito.
+                const supported = OneSignal.Notifications.isPushSupported();
+                const native = OneSignal.Notifications.permissionNative; // 'default'|'granted'|'denied'
+                const optedIn = OneSignal.User.PushSubscription.optedIn;
+
+                if (!supported)           { cta.classList.remove('show'); return; }
+                if (native === 'denied')  { cta.classList.remove('show'); return; }
+                if (optedIn)              { cta.classList.remove('show'); return; }
+
+                cta.classList.add('show');
+            }
+
+            atualizarVisibilidadeCta();
+
+            // Reagir em tempo real quando o estado muda
+            OneSignal.User.PushSubscription.addEventListener('change', function() {
+                atualizarVisibilidadeCta();
+            });
+            OneSignal.Notifications.addEventListener('permissionChange', function() {
+                atualizarVisibilidadeCta();
+            });
+
+            cta.addEventListener('click', async function() {
+                cta.disabled = true;
+                try {
+                    // Mostra o prompt nativo do browser. Se o usuário aceitar,
+                    // o SDK registra e optIn vira true automaticamente.
+                    await OneSignal.Notifications.requestPermission();
+                    // Garantia extra: pede pra SDK entrar em opt-in
+                    await OneSignal.User.PushSubscription.optIn();
+                    // Tag pra segmentação
+                    OneSignal.User.addTag('origem', 'catalogo_pwa');
+                } catch (e) {
+                    console.warn('[Push] Falha ao solicitar permissão:', e);
+                } finally {
+                    cta.disabled = false;
+                    atualizarVisibilidadeCta();
+                }
+            });
         });
     </script>
 
