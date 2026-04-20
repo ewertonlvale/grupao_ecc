@@ -216,5 +216,10 @@ const ODOO_MODELS = {
   AVALIACAO_GRUPAO: 'x_avaliacao_grupao',
 
   // Modelo de eventos do calendário
-  CALENDARIO: 'x_calendario'
+  CALENDARIO: 'x_calendario',
+
+  // ⬇️ NOVO: Catálogo de Serviços e Comércios dos paroquianos (v2 — 3 modelos)
+  CATALOGO_GRUPO:     'x_grupo_catalogo',     // 10 grupos da taxonomia
+  CATALOGO_CATEGORIA: 'x_categoria_catalogo', // ~80 categorias (Many2one → grupo)
+  CATALOGO:           'x_catalogo'            // os negócios (Many2one → categoria)
 };

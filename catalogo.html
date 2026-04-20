@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Catálogo de Serviços e Comércios — Paróquia N. S. da Conceição Aparecida</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Source+Sans+3:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --gold: #C8963E;
+      --gold-light: #E8C87A;
+      --gold-glow: rgba(200, 150, 62, 0.15);
+      --blue-deep: #1B2A4A;
+      --blue-mid: #2C3E6B;
+      --blue-soft: #3D5289;
+      --cream: #FAF6F0;
+      --cream-dark: #EDE6D8;
+      --white: #FFFFFF;
+      --text-dark: #1A1A1A;
+      --text-mid: #4A4A4A;
+      --text-light: #7A7A7A;
+      --green-whatsapp: #25D366;
+      --pink-instagram: #E1306C;
+      --shadow-soft: 0 2px 16px rgba(27, 42, 74, 0.08);
+      --shadow-hover: 0 8px 32px rgba(27, 42, 74, 0.14);
+      --radius: 12px;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Source Sans 3', sans-serif;
+      background: var(--cream);
+      color: var(--text-dark);
+      min-height: 100vh;
+    }
+    /* ── HEADER ── */
+    .header {
+      background: linear-gradient(135deg, var(--blue-deep) 0%, var(--blue-mid) 60%, var(--blue-soft) 100%);
+      padding: 2.5rem 1.5rem 3.5rem;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .header::before {
+      content: '';
+      position: absolute;
+      top: -60%;
+      left: -20%;
+      width: 140%;
+      height: 220%;
+      background: radial-gradient(ellipse, rgba(200, 150, 62, 0.07) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .header-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(200, 150, 62, 0.25);
+      border-radius: 50px;
+      padding: 0.4rem 1.2rem;
+      margin-bottom: 1.2rem;
+      font-size: 0.8rem;
+      color: var(--gold-light);
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      font-weight: 500;
+      backdrop-filter: blur(4px);
+    }
+    .header-badge .cross { font-size: 1rem; }
+    .header h1 {
+      font-family: 'Playfair Display', serif;
+      font-weight: 700;
+      font-size: clamp(1.6rem, 4.5vw, 2.4rem);
+      color: var(--white);
+      margin-bottom: 0.5rem;
+      position: relative;
+    }
+    .header p {
+      color: rgba(255,255,255,0.6);
+      font-weight: 300;
+      font-size: 1rem;
+      max-width: 500px;
+      margin: 0 auto;
+      line-height: 1.5;
+    }
+
+    /* ── SEARCH & FILTERS ── */
+    .filters-container {
+      max-width: 1100px;
+      margin: 0.5rem auto 0;
+      padding: 0 1.5rem;
+      position: relative;
+      z-index: 10;
+    }
+    .search-bar {
+      background: var(--white);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-soft);
+      padding: 1rem 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+    .search-bar svg { width: 20px; height: 20px; color: var(--text-light); flex-shrink: 0; }
+    .search-bar input {
+      flex: 1; border: none; outline: none;
+      font-family: inherit; font-size: 1rem;
+      color: var(--text-dark); background: transparent;
+    }
+    .search-bar input::placeholder { color: var(--text-light); }
+    .filter-row {
+      display: flex; gap: 0.6rem; flex-wrap: wrap;
+      align-items: center; margin-bottom: 1.5rem;
+    }
+    .filter-label {
+      font-size: 0.8rem; font-weight: 600; color: var(--text-light);
+      text-transform: uppercase; letter-spacing: 1px; margin-right: 0.25rem;
+    }
+    .filter-btn {
+      background: var(--white); border: 1.5px solid var(--cream-dark);
+      border-radius: 50px; padding: 0.45rem 1.1rem;
+      font-family: inherit; font-size: 0.85rem; font-weight: 500;
+      color: var(--text-mid); cursor: pointer; transition: all 0.2s ease;
+    }
+    .filter-btn:hover { border-color: var(--gold); color: var(--gold); }
+    .filter-btn.active {
+      background: var(--blue-deep); border-color: var(--blue-deep); color: var(--white);
+    }
+    .filter-select {
+      appearance: none; -webkit-appearance: none;
+      background: var(--white); border: 1.5px solid var(--cream-dark);
+      border-radius: 50px; padding: 0.45rem 2.2rem 0.45rem 1.1rem;
+      font-family: inherit; font-size: 0.85rem; font-weight: 500;
+      color: var(--text-mid); cursor: pointer; transition: all 0.2s ease;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%234A4A4A' viewBox='0 0 16 16'%3E%3Cpath d='M1.646 4.646a.5.5 0 01.708 0L8 10.293l5.646-5.647a.5.5 0 01.708.708l-6 6a.5.5 0 01-.708 0l-6-6a.5.5 0 010-.708z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 0.8rem center;
+      min-width: 160px;
+    }
+    .filter-select:hover { border-color: var(--gold); }
+    .filter-select:focus {
+      outline: none; border-color: var(--gold);
+      box-shadow: 0 0 0 3px var(--gold-glow);
+    }
+    .filter-divider {
+      width: 1px; height: 24px; background: var(--cream-dark); margin: 0 0.4rem;
+    }
+
+    /* ── RESULTS COUNTER ── */
+    .results-info {
+      max-width: 1100px; margin: 0 auto 1rem; padding: 0 1.5rem;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .results-count { font-size: 0.9rem; color: var(--text-light); }
+    .results-count strong { color: var(--text-dark); font-weight: 600; }
+
+    /* ── CARDS GRID ── */
+    .grid {
+      max-width: 1100px; margin: 0 auto; padding: 0 1.5rem 3rem;
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 1.25rem;
+    }
+    .card {
+      background: var(--white); border-radius: var(--radius);
+      box-shadow: var(--shadow-soft); overflow: hidden;
+      transition: box-shadow 0.3s ease, transform 0.3s ease;
+      display: flex; flex-direction: column;
+    }
+    .card:hover { box-shadow: var(--shadow-hover); transform: translateY(-3px); }
+    .card-top {
+      display: flex; align-items: center; gap: 1rem;
+      padding: 1.25rem 1.25rem 0.75rem;
+    }
+    .card-photo {
+      width: 64px; height: 64px; border-radius: 10px;
+      background: var(--cream); flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.5rem; color: var(--gold);
+      border: 2px solid var(--cream-dark);
+      overflow: hidden;
+    }
+    .card-photo img {
+      width: 100%; height: 100%; border-radius: 8px; object-fit: cover;
+    }
+    .card-info { flex: 1; min-width: 0; }
+    .card-name {
+      font-family: 'Playfair Display', serif; font-weight: 600;
+      font-size: 1.1rem; color: var(--blue-deep);
+      line-height: 1.3; margin-bottom: 0.15rem;
+      word-break: break-word;
+    }
+    .card-responsavel { font-size: 0.85rem; color: var(--text-light); font-weight: 400; }
+    .card-tipo {
+      display: inline-block; font-size: 0.65rem; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 1px;
+      padding: 0.2rem 0.6rem; border-radius: 4px; margin-top: 0.3rem;
+    }
+    .tipo-comercio { background: rgba(200, 150, 62, 0.12); color: var(--gold); }
+    .tipo-servico  { background: rgba(27, 42, 74, 0.08); color: var(--blue-mid); }
+    .card-body { padding: 0 1.25rem; flex: 1; }
+    .card-descricao {
+      font-size: 0.9rem; color: var(--text-mid);
+      line-height: 1.55; margin-bottom: 0.75rem;
+    }
+    .card-tags {
+      display: flex; flex-wrap: wrap; gap: 0.35rem; margin-bottom: 1rem;
+    }
+    .tag {
+      background: var(--cream); color: var(--text-mid);
+      font-size: 0.75rem; font-weight: 500;
+      padding: 0.25rem 0.65rem; border-radius: 50px;
+    }
+    .card-footer {
+      padding: 0.75rem 1.25rem 1.25rem;
+      display: flex; gap: 0.5rem; flex-wrap: wrap;
+      border-top: 1px solid var(--cream); margin-top: auto;
+    }
+    .btn-contato {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      padding: 0.5rem 0.9rem; border-radius: 8px;
+      font-family: inherit; font-size: 0.8rem; font-weight: 600;
+      text-decoration: none; transition: all 0.2s ease;
+      border: none; cursor: pointer;
+    }
+    .btn-contato svg { width: 16px; height: 16px; }
+    .btn-whatsapp  { background: var(--green-whatsapp); color: var(--white); }
+    .btn-whatsapp:hover  { background: #1EBE57; transform: scale(1.03); }
+    .btn-telefone  { background: var(--blue-deep); color: var(--white); }
+    .btn-telefone:hover  { background: var(--blue-mid); transform: scale(1.03); }
+    .btn-instagram { background: var(--pink-instagram); color: var(--white); }
+    .btn-instagram:hover { background: #C72B5C; transform: scale(1.03); }
+
+    /* ── EMPTY & LOADING STATE ── */
+    .empty-state, .loading-state {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 3rem 1rem;
+      color: var(--text-light);
+    }
+    .empty-state svg, .loading-state svg {
+      width: 48px; height: 48px; margin-bottom: 1rem; opacity: 0.4;
+    }
+    .spinner {
+      width: 42px; height: 42px;
+      border: 4px solid var(--cream-dark);
+      border-top-color: var(--gold);
+      border-radius: 50%;
+      animation: spin 0.9s linear infinite;
+      margin: 0 auto 1rem;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── FOOTER ── */
+    .page-footer {
+      text-align: center; padding: 2rem 1.5rem;
+      border-top: 1px solid var(--cream-dark); background: var(--white);
+    }
+    .page-footer p { font-size: 0.8rem; color: var(--text-light); line-height: 1.6; }
+    .page-footer .parish-name { font-weight: 600; color: var(--blue-deep); }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 680px) {
+      .grid { grid-template-columns: 1fr; }
+      .filter-divider { display: none; }
+      .filter-row { gap: 0.4rem; }
+      .header { padding: 2rem 1rem 3rem; }
+    }
+
+    /* ── ANIMATIONS ── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .card, .destaque-card { animation: fadeUp 0.4s ease both; }
+    .card:nth-child(1) { animation-delay: 0.05s; }
+    .card:nth-child(2) { animation-delay: 0.10s; }
+    .card:nth-child(3) { animation-delay: 0.15s; }
+    .card:nth-child(4) { animation-delay: 0.20s; }
+    .card:nth-child(5) { animation-delay: 0.25s; }
+    .card:nth-child(6) { animation-delay: 0.30s; }
+
+    /* ── CAROUSEL DESTAQUES ── */
+    .destaques-section {
+      max-width: 1100px; margin: 0 auto;
+      padding: 1.8rem 1.5rem 0.5rem;
+    }
+    .destaques-section[hidden] { display: none; }
+    .destaques-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 1rem;
+    }
+    .destaques-title {
+      display: flex; align-items: center; gap: 0.5rem;
+      font-family: 'Playfair Display', serif; font-weight: 700;
+      font-size: 1.15rem; color: var(--blue-deep);
+    }
+    .destaques-title .star { color: var(--gold); font-size: 1.1rem; }
+    .destaques-badge {
+      font-size: 0.7rem; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 1px;
+      color: var(--gold); background: var(--gold-glow);
+      padding: 0.3rem 0.8rem; border-radius: 50px;
+    }
+    .carousel-wrapper { position: relative; }
+    .carousel-track {
+      display: flex; gap: 1rem;
+      overflow-x: auto; scroll-behavior: smooth;
+      scroll-snap-type: x mandatory;
+      -ms-overflow-style: none; scrollbar-width: none;
+      padding-bottom: 0.5rem;
+    }
+    .carousel-track::-webkit-scrollbar { display: none; }
+    .destaque-card {
+      scroll-snap-align: start;
+      flex: 0 0 340px;
+      background: linear-gradient(135deg, var(--blue-deep) 0%, var(--blue-mid) 100%);
+      border-radius: var(--radius); padding: 1.4rem;
+      color: var(--white); position: relative;
+      overflow: hidden; transition: transform 0.3s ease;
+    }
+    .destaque-card:hover { transform: translateY(-3px); }
+    .destaque-card::before {
+      content: ''; position: absolute; top: -30%; right: -20%;
+      width: 200px; height: 200px;
+      background: radial-gradient(circle, rgba(200, 150, 62, 0.15) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .destaque-ribbon {
+      position: absolute; top: 12px; right: -28px;
+      background: var(--gold); color: var(--white);
+      font-size: 0.6rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 1.5px;
+      padding: 0.25rem 2.2rem;
+      transform: rotate(45deg);
+    }
+    .destaque-top {
+      display: flex; align-items: center;
+      gap: 0.85rem; margin-bottom: 0.75rem;
+    }
+    .destaque-photo {
+      width: 56px; height: 56px; border-radius: 10px;
+      background: rgba(255,255,255,0.12);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.6rem; flex-shrink: 0;
+      border: 1.5px solid rgba(255,255,255,0.15);
+      overflow: hidden;
+    }
+    .destaque-photo img {
+      width: 100%; height: 100%; border-radius: 8px; object-fit: cover;
+    }
+    .destaque-name {
+      font-family: 'Playfair Display', serif; font-weight: 600;
+      font-size: 1.05rem; margin-bottom: 0.15rem;
+      word-break: break-word;
+    }
+    .destaque-responsavel { font-size: 0.8rem; opacity: 0.65; }
+    .destaque-tipo {
+      display: inline-block; font-size: 0.6rem; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 1px;
+      padding: 0.15rem 0.5rem; border-radius: 4px; margin-top: 0.2rem;
+      background: rgba(200, 150, 62, 0.25); color: var(--gold-light);
+    }
+    .destaque-descricao {
+      font-size: 0.85rem; line-height: 1.5;
+      opacity: 0.8; margin-bottom: 0.9rem;
+    }
+    .destaque-tags {
+      display: flex; flex-wrap: wrap; gap: 0.3rem; margin-bottom: 1rem;
+    }
+    .destaque-tag {
+      background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.8);
+      font-size: 0.7rem; font-weight: 500;
+      padding: 0.2rem 0.55rem; border-radius: 50px;
+    }
+    .destaque-footer { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+    .destaque-footer .btn-contato {
+      font-size: 0.75rem; padding: 0.4rem 0.75rem; border-radius: 6px;
+    }
+    .destaque-footer .btn-whatsapp  { background: rgba(37, 211, 102, 0.9); }
+    .destaque-footer .btn-telefone  { background: rgba(255,255,255,0.15); }
+    .destaque-footer .btn-instagram { background: rgba(225, 48, 108, 0.85); }
+
+    .carousel-nav { display: flex; gap: 0.4rem; }
+    .carousel-arrow {
+      width: 32px; height: 32px; border-radius: 50%;
+      border: 1.5px solid var(--cream-dark); background: var(--white);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; transition: all 0.2s ease; color: var(--text-mid);
+    }
+    .carousel-arrow:hover { border-color: var(--gold); color: var(--gold); }
+    .carousel-arrow svg { width: 14px; height: 14px; }
+    .carousel-dots {
+      display: flex; justify-content: center; gap: 0.4rem; margin-top: 0.9rem;
+    }
+    .carousel-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--cream-dark);
+      transition: all 0.3s ease; cursor: pointer;
+    }
+    .carousel-dot.active {
+      background: var(--gold); width: 24px; border-radius: 4px;
+    }
+    @media (max-width: 680px) {
+      .destaque-card { flex: 0 0 290px; }
+      .carousel-nav  { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-badge">
+      <span class="cross">✝</span> Paróquia N. S. da Conceição Aparecida
+    </div>
+    <h1>Catálogo da Comunidade</h1>
+    <p>Conheça os serviços e comércios dos nossos paroquianos. Apoie quem está perto de você!</p>
+  </div>
+
+  <!-- DESTAQUES CAROUSEL -->
+  <div class="destaques-section" id="destaquesSection" hidden>
+    <div class="destaques-header">
+      <div class="destaques-title">
+        <span class="star">★</span> Destaques
+      </div>
+      <div style="display:flex; align-items:center; gap:0.75rem;">
+        <span class="destaques-badge">Publicidade</span>
+        <div class="carousel-nav">
+          <button class="carousel-arrow" id="btnCarouselPrev" aria-label="Anterior">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+          </button>
+          <button class="carousel-arrow" id="btnCarouselNext" aria-label="Próximo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+    <div class="carousel-wrapper">
+      <div class="carousel-track" id="carouselTrack"></div>
+      <div class="carousel-dots" id="carouselDots"></div>
+    </div>
+  </div>
+
+  <!-- FILTERS -->
+  <div class="filters-container">
+    <div class="search-bar">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z"/>
+      </svg>
+      <input type="text" id="inputBusca" placeholder="Buscar por nome, serviço ou produto...">
+    </div>
+    <div class="filter-row">
+      <span class="filter-label">Tipo:</span>
+      <button class="filter-btn active" data-tipo="">Todos</button>
+      <button class="filter-btn" data-tipo="comercio">Comércio</button>
+      <button class="filter-btn" data-tipo="servico">Serviço</button>
+      <div class="filter-divider"></div>
+      <span class="filter-label">Categoria:</span>
+      <select class="filter-select" id="selectCategoria">
+        <option value="">Todas as categorias</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- RESULTS INFO -->
+  <div class="results-info">
+    <span class="results-count">Exibindo <strong id="resultsCount">0</strong> resultados</span>
+  </div>
+
+  <!-- CARDS GRID -->
+  <div class="grid" id="grid">
+    <div class="loading-state" id="loadingState">
+      <div class="spinner"></div>
+      <p>Carregando catálogo...</p>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="page-footer">
+    <p>
+      <span class="parish-name">Paróquia Nossa Senhora da Conceição Aparecida</span><br>
+      Catálogo da Comunidade — Apoie quem está perto de você
+    </p>
+  </div>
+
+  <script>
+    // ========== SVGs reutilizáveis ==========
+    const SVG_WHATSAPP = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.121.553 4.116 1.52 5.853L.06 23.648a.5.5 0 00.61.61l5.795-1.46A11.94 11.94 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.94 0-3.77-.5-5.36-1.38a.5.5 0 00-.38-.048l-3.794.956.956-3.794a.5.5 0 00-.048-.38A9.96 9.96 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>';
+    const SVG_TELEFONE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>';
+    const SVG_INSTAGRAM = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>';
+    const SVG_EMPTY = '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z"/></svg>';
+
+    // ========== Estado ==========
+    const state = {
+      itens: [],
+      destaques: [],
+      grupos: [],              // [{ id, nome, icone, cor, ordem }]
+      categoriasPorGrupo: {},  // { 'Construção & Reforma': ['Construção', 'Elétrica', ...] }
+      filtroTipo: '',
+      filtroCategoria: '',
+      busca: ''
+    };
+
+    // ========== Helpers ==========
+    function escapeHtml(s) {
+      if (s == null) return '';
+      return String(s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function normalizar(s) {
+      return String(s || '').toLowerCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    }
+
+    function whatsappLink(numero, nomeEmpresa) {
+      if (!numero) return '';
+      const msg = encodeURIComponent('Olá! Vi seu contato no Catálogo da Paróquia.');
+      return 'https://wa.me/' + numero + '?text=' + msg;
+    }
+
+    function telefoneLink(numero) {
+      if (!numero) return '';
+      return 'tel:+' + numero;
+    }
+
+    function instagramLink(handle) {
+      if (!handle) return '';
+      if (/^https?:\/\//i.test(handle)) return handle;
+      return 'https://instagram.com/' + handle;
+    }
+
+    // ========== Renderização de Card (grid) ==========
+    function renderCard(item) {
+      const foto = item.fotoUrl
+        ? '<img src="' + escapeHtml(item.fotoUrl) + '" alt="' + escapeHtml(item.nome) + '" onerror="this.outerHTML=\'' + escapeHtml(item.emoji) + '\'">'
+        : escapeHtml(item.emoji || '🏠');
+
+      const tipoCls = item.tipo === 'servico' ? 'tipo-servico' : 'tipo-comercio';
+      const tipoTxt = item.tipo === 'servico' ? 'Serviço' : 'Comércio';
+
+      const tagsHtml = (item.tags || [])
+        .map(t => '<span class="tag">' + escapeHtml(t) + '</span>')
+        .join('');
+
+      const botoes = [];
+      if (item.whatsapp) {
+        botoes.push(
+          '<a href="' + whatsappLink(item.whatsapp, item.nome) +
+          '" target="_blank" rel="noopener" class="btn-contato btn-whatsapp">' +
+          SVG_WHATSAPP + 'WhatsApp</a>'
+        );
+      }
+      if (item.telefone) {
+        botoes.push(
+          '<a href="' + telefoneLink(item.telefone) +
+          '" class="btn-contato btn-telefone">' +
+          SVG_TELEFONE + 'Ligar</a>'
+        );
+      }
+      if (item.instagram) {
+        botoes.push(
+          '<a href="' + instagramLink(item.instagram) +
+          '" target="_blank" rel="noopener" class="btn-contato btn-instagram">' +
+          SVG_INSTAGRAM + 'Instagram</a>'
+        );
+      }
+
+      return '' +
+        '<div class="card">' +
+          '<div class="card-top">' +
+            '<div class="card-photo">' + foto + '</div>' +
+            '<div class="card-info">' +
+              '<div class="card-name">' + escapeHtml(item.nome) + '</div>' +
+              (item.responsavel
+                ? '<div class="card-responsavel">' + escapeHtml(item.responsavel) + '</div>'
+                : '') +
+              '<span class="card-tipo ' + tipoCls + '">' + tipoTxt + '</span>' +
+            '</div>' +
+          '</div>' +
+          '<div class="card-body">' +
+            (item.descricao
+              ? '<p class="card-descricao">' + escapeHtml(item.descricao) + '</p>'
+              : '') +
+            (tagsHtml ? '<div class="card-tags">' + tagsHtml + '</div>' : '') +
+          '</div>' +
+          (botoes.length
+            ? '<div class="card-footer">' + botoes.join('') + '</div>'
+            : '') +
+        '</div>';
+    }
+
+    // ========== Renderização de Destaque (carrossel) ==========
+    function renderDestaque(item) {
+      const foto = item.fotoUrl
+        ? '<img src="' + escapeHtml(item.fotoUrl) + '" alt="' + escapeHtml(item.nome) + '" onerror="this.outerHTML=\'' + escapeHtml(item.emoji) + '\'">'
+        : escapeHtml(item.emoji || '🏠');
+
+      const tipoTxt = item.tipo === 'servico' ? 'Serviço' : 'Comércio';
+
+      const tagsHtml = (item.tags || [])
+        .map(t => '<span class="destaque-tag">' + escapeHtml(t) + '</span>')
+        .join('');
+
+      const botoes = [];
+      if (item.whatsapp) {
+        botoes.push(
+          '<a href="' + whatsappLink(item.whatsapp, item.nome) +
+          '" target="_blank" rel="noopener" class="btn-contato btn-whatsapp">' +
+          SVG_WHATSAPP + 'WhatsApp</a>'
+        );
+      }
+      if (item.telefone) {
+        botoes.push(
+          '<a href="' + telefoneLink(item.telefone) +
+          '" class="btn-contato btn-telefone">' +
+          SVG_TELEFONE + 'Ligar</a>'
+        );
+      }
+      if (item.instagram) {
+        botoes.push(
+          '<a href="' + instagramLink(item.instagram) +
+          '" target="_blank" rel="noopener" class="btn-contato btn-instagram">' +
+          SVG_INSTAGRAM + 'Instagram</a>'
+        );
+      }
+
+      return '' +
+        '<div class="destaque-card">' +
+          '<div class="destaque-ribbon">Destaque</div>' +
+          '<div class="destaque-top">' +
+            '<div class="destaque-photo">' + foto + '</div>' +
+            '<div>' +
+              '<div class="destaque-name">' + escapeHtml(item.nome) + '</div>' +
+              (item.responsavel
+                ? '<div class="destaque-responsavel">' + escapeHtml(item.responsavel) + '</div>'
+                : '') +
+              '<span class="destaque-tipo">' + tipoTxt + '</span>' +
+            '</div>' +
+          '</div>' +
+          (item.descricao
+            ? '<p class="destaque-descricao">' + escapeHtml(item.descricao) + '</p>'
+            : '') +
+          (tagsHtml ? '<div class="destaque-tags">' + tagsHtml + '</div>' : '') +
+          (botoes.length
+            ? '<div class="destaque-footer">' + botoes.join('') + '</div>'
+            : '') +
+        '</div>';
+    }
+
+    // ========== Preenche categorias ==========
+    // catObj:  { 'Grupo A': ['Cat1', 'Cat2'], ... }
+    // grupos:  [{ nome, icone, ordem }]  (opcional — define ordem + ícones dos optgroups)
+    function popularCategorias(catObj, grupos) {
+      const select = document.getElementById('selectCategoria');
+      select.innerHTML = '<option value="">Todas as categorias</option>';
+
+      // Ordem canônica: lista "grupos" do backend; fallback → Object.keys
+      const iconeDe = {};
+      let ordemNomes;
+      if (Array.isArray(grupos) && grupos.length) {
+        ordemNomes = grupos
+          .slice()
+          .sort((a, b) => (a.ordem || 0) - (b.ordem || 0))
+          .map(g => { if (g && g.nome) iconeDe[g.nome] = g.icone || ''; return g.nome; });
+        // Garante que grupos fora da lista canônica ainda apareçam no final
+        Object.keys(catObj).forEach(n => { if (ordemNomes.indexOf(n) === -1) ordemNomes.push(n); });
+      } else {
+        ordemNomes = Object.keys(catObj);
+      }
+
+      ordemNomes.forEach(grupo => {
+        const cats = catObj[grupo] || [];
+        if (!cats.length) return;
+        const og = document.createElement('optgroup');
+        const icone = iconeDe[grupo] || '';
+        og.label = (icone ? icone + ' ' : '') + grupo;
+        cats.forEach(cat => {
+          const opt = document.createElement('option');
+          opt.value = cat;
+          opt.textContent = cat;
+          og.appendChild(opt);
+        });
+        select.appendChild(og);
+      });
+    }
+
+    // ========== Filtragem ==========
+    function aplicarFiltros() {
+      const busca = normalizar(state.busca);
+      const tipo = state.filtroTipo;
+      const categoria = state.filtroCategoria;
+
+      const filtrados = state.itens.filter(item => {
+        if (tipo && item.tipo !== tipo) return false;
+        if (categoria && item.categoria !== categoria) return false;
+        if (busca) {
+          const alvo = normalizar([
+            item.nome, item.responsavel, item.descricao,
+            item.categoria, (item.tags || []).join(' ')
+          ].join(' '));
+          if (alvo.indexOf(busca) === -1) return false;
+        }
+        return true;
+      });
+
+      renderGrid(filtrados);
+    }
+
+    function renderGrid(itens) {
+      const grid = document.getElementById('grid');
+      const count = document.getElementById('resultsCount');
+      count.textContent = itens.length;
+
+      if (!itens.length) {
+        grid.innerHTML = '' +
+          '<div class="empty-state">' +
+            SVG_EMPTY +
+            '<p><strong>Nenhum resultado encontrado</strong></p>' +
+            '<p>Tente remover algum filtro ou buscar por outro termo.</p>' +
+          '</div>';
+        return;
+      }
+
+      grid.innerHTML = itens.map(renderCard).join('');
+    }
+
+    // ========== Carrossel de destaques ==========
+    function renderCarousel(destaques) {
+      const section = document.getElementById('destaquesSection');
+      const track = document.getElementById('carouselTrack');
+      const dots = document.getElementById('carouselDots');
+
+      if (!destaques || !destaques.length) {
+        section.hidden = true;
+        return;
+      }
+
+      section.hidden = false;
+      track.innerHTML = destaques.map(renderDestaque).join('');
+      dots.innerHTML = destaques
+        .map((_, i) => '<div class="carousel-dot' + (i === 0 ? ' active' : '') + '" data-idx="' + i + '"></div>')
+        .join('');
+
+      // Sincroniza dot ativa com scroll do track
+      track.addEventListener('scroll', () => {
+        const cardWidth = track.querySelector('.destaque-card')?.offsetWidth || 340;
+        const gap = 16;
+        const idx = Math.round(track.scrollLeft / (cardWidth + gap));
+        dots.querySelectorAll('.carousel-dot').forEach((d, i) => {
+          d.classList.toggle('active', i === idx);
+        });
+      });
+
+      dots.querySelectorAll('.carousel-dot').forEach(dot => {
+        dot.addEventListener('click', () => {
+          const idx = parseInt(dot.dataset.idx, 10);
+          const cardWidth = track.querySelector('.destaque-card')?.offsetWidth || 340;
+          track.scrollTo({ left: idx * (cardWidth + 16), behavior: 'smooth' });
+        });
+      });
+    }
+
+    // ========== Eventos ==========
+    function bindEvents() {
+      // Busca
+      const inputBusca = document.getElementById('inputBusca');
+      let buscaTimer;
+      inputBusca.addEventListener('input', () => {
+        clearTimeout(buscaTimer);
+        buscaTimer = setTimeout(() => {
+          state.busca = inputBusca.value;
+          aplicarFiltros();
+        }, 150);
+      });
+
+      // Filtro tipo
+      document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          state.filtroTipo = btn.dataset.tipo || '';
+          aplicarFiltros();
+        });
+      });
+
+      // Filtro categoria
+      document.getElementById('selectCategoria').addEventListener('change', e => {
+        state.filtroCategoria = e.target.value;
+        aplicarFiltros();
+      });
+
+      // Carrossel setas
+      document.getElementById('btnCarouselPrev').addEventListener('click', () => {
+        document.getElementById('carouselTrack').scrollBy({ left: -360, behavior: 'smooth' });
+      });
+      document.getElementById('btnCarouselNext').addEventListener('click', () => {
+        document.getElementById('carouselTrack').scrollBy({ left: 360, behavior: 'smooth' });
+      });
+    }
+
+    // ========== Inicialização ==========
+    function carregar() {
+      if (typeof google === 'undefined' || !google.script || !google.script.run) {
+        // Fallback local (permite abrir o HTML fora do Apps Script)
+        console.warn('google.script.run indisponível — rodando em modo demo.');
+        tratarResposta({
+          sucesso: true,
+          itens: [], destaques: [],
+          grupos: [
+            { id: 1, nome: 'Construção & Reforma',   icone: '🔨', ordem: 1 },
+            { id: 2, nome: 'Alimentação',            icone: '🍽️', ordem: 2 },
+            { id: 3, nome: 'Beleza & Estética',      icone: '💇', ordem: 3 },
+            { id: 4, nome: 'Saúde & Bem-estar',      icone: '🏥', ordem: 4 },
+            { id: 5, nome: 'Casa, Pet & Limpeza',    icone: '🏠', ordem: 5 }
+          ],
+          categoriasPorGrupo: {
+            'Construção & Reforma': ['Construção','Elétrica','Encanamento','Pintura','Marcenaria'],
+            'Alimentação':          ['Marmitex / Comida caseira','Doces e bolos','Delivery'],
+            'Beleza & Estética':    ['Cabeleireiro','Barbearia','Manicure / Pedicure'],
+            'Saúde & Bem-estar':    ['Fisioterapia','Nutrição','Psicologia'],
+            'Casa, Pet & Limpeza':  ['Diarista','Lavanderia','Banho e tosa']
+          },
+          total: 0
+        });
+        return;
+      }
+
+      google.script.run
+        .withSuccessHandler(tratarResposta)
+        .withFailureHandler(tratarErro)
+        .obterCatalogoCompleto();
+    }
+
+    function tratarResposta(res) {
+      if (!res || !res.sucesso) {
+        tratarErro(new Error((res && res.erro) || 'Resposta inválida'));
+        return;
+      }
+      state.itens = res.itens || [];
+      state.destaques = res.destaques || [];
+      state.grupos = Array.isArray(res.grupos) ? res.grupos : [];
+
+      // Backward compat: aceita tanto `categoriasPorGrupo` (v2) quanto `categorias` (v1)
+      state.categoriasPorGrupo =
+        (res.categoriasPorGrupo && typeof res.categoriasPorGrupo === 'object')
+          ? res.categoriasPorGrupo
+          : (res.categorias && typeof res.categorias === 'object' ? res.categorias : {});
+
+      popularCategorias(state.categoriasPorGrupo, state.grupos);
+      renderCarousel(state.destaques);
+      aplicarFiltros();
+    }
+
+    function tratarErro(err) {
+      console.error('Erro ao carregar catálogo:', err);
+      const grid = document.getElementById('grid');
+      grid.innerHTML = '' +
+        '<div class="empty-state">' +
+          SVG_EMPTY +
+          '<p><strong>Não foi possível carregar o catálogo</strong></p>' +
+          '<p>' + (err && err.message ? err.message : 'Tente novamente em alguns instantes.') + '</p>' +
+        '</div>';
+      document.getElementById('resultsCount').textContent = '0';
+    }
+
+    // Go!
+    document.addEventListener('DOMContentLoaded', () => {
+      bindEvents();
+      carregar();
+    });
+  </script>
+</body>
+</html>

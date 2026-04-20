@@ -35,6 +35,11 @@ function doGet(e) {
       case 'ejc':
         return criarPagina('ficha_cadastral_ejc', 'Ficha Cadastral - EJC');
 
+            // ⬇️ NOVA ROTA
+      case 'catalogo':
+      case 'servicos':
+        return criarPagina('catalogo', 'Catálogo da Comunidade - ECC');
+        
       default:
         return criarPagina('atualizar_cadastro', 'Atualização Cadastral - ECC');
     }
