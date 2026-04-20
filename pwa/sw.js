@@ -1,15 +1,22 @@
 /* ================================================
- * Service Worker — Catálogo da Comunidade
+ * Service Worker — Catálogo da Comunidade + Push
  * ================================================
+ * Versão com push notifications via OneSignal.
+ *
  * Estratégia:
- *   1. Cache-first para a "app shell" (HTML, manifest, ícones)
- *      → abre instantâneo mesmo offline.
- *   2. Bypass total para script.google.com (conteúdo dinâmico do iframe).
- *      → o SW só controla mesma origem; manter explícito para clareza.
- *   3. Network-first para qualquer outro recurso same-origin, com fallback no cache.
+ *   1. Importa o SW do OneSignal (deve ser a PRIMEIRA linha).
+ *      → ele registra handlers próprios de push/notificationclick.
+ *   2. Cache-first para a "app shell" (HTML, manifest, ícones).
+ *   3. Bypass total para script.google.com, cdn.onesignal.com etc.
+ *   4. Network-first com fallback para outros recursos same-origin.
  * ================================================ */
 
-const VERSION = 'v1.0.0';
+// IMPORTANTE: importScripts precisa vir ANTES de qualquer addEventListener.
+// O SDK do OneSignal registra seus próprios listeners de 'push' e
+// 'notificationclick' — não mexemos neles.
+importScripts('https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.sw.js');
+
+const VERSION = 'v1.1.0'; // bump ao mexer em qualquer arquivo da shell
 const CACHE_NAME = `catalogo-ecc-${VERSION}`;
 
 const APP_SHELL = [
@@ -54,7 +61,7 @@ self.addEventListener('fetch', (event) => {
   // Só interceptamos GET
   if (req.method !== 'GET') return;
 
-  // Bypass explícito: Apps Script, Drive, Analytics, fontes
+  // Bypass explícito: Apps Script, Drive, Analytics, fontes, OneSignal
   const bypass = [
     'script.google.com',
     'googleusercontent.com',
@@ -63,6 +70,8 @@ self.addEventListener('fetch', (event) => {
     'google-analytics.com',
     'fonts.googleapis.com',
     'fonts.gstatic.com',
+    'cdn.onesignal.com',
+    'onesignal.com',
   ];
   if (bypass.some((host) => url.hostname.includes(host))) {
     return; // deixa o browser tratar normalmente
@@ -81,13 +90,11 @@ async function cacheFirst(request) {
 
   try {
     const fresh = await fetch(request);
-    // Só cacheia respostas OK
     if (fresh && fresh.status === 200 && fresh.type === 'basic') {
       cache.put(request, fresh.clone());
     }
     return fresh;
   } catch (err) {
-    // Offline e não temos no cache: devolve a home
     const fallback = await cache.match('./site_catalogo.html');
     if (fallback) return fallback;
     throw err;

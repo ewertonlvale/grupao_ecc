@@ -4,26 +4,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
 
-    <!-- ============ PWA CORE ============ -->
+    <!-- PWA essentials -->
     <meta name="theme-color" content="#1B2A4A">
-    <meta name="background-color" content="#1B2A4A">
     <meta name="mobile-web-app-capable" content="yes">
-    <meta name="application-name" content="Catálogo ECC">
-    <link rel="manifest" href="manifest.json">
-
-    <!-- ============ iOS STANDALONE ============ -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Catálogo ECC">
+    <meta name="application-name" content="Catálogo ECC">
 
     <title>Catálogo da Comunidade — ECC</title>
 
-    <!-- Favicons e ícones (inclui PWA + iOS + fallback) -->
-    <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
+    <!-- Manifest + Ícones -->
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" href="favicon.png">
     <link rel="shortcut icon" type="image/png" href="favicon.png">
-    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
-    <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
-    <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
 
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -32,8 +27,12 @@
             height: 100%;
             overflow: hidden;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            /* Evitar que o conteúdo vá para trás da status bar no iOS standalone */
-            padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+        }
+
+        /* Safe-area iOS (notch) */
+        body {
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
             background: #1B2A4A;
         }
 
@@ -74,11 +73,11 @@
             letter-spacing: 0.5px;
         }
 
-        /* Botão Voltar (some quando é standalone PWA — não tem para onde voltar) */
+        /* Botão Voltar (some em modo standalone) */
         .back-button {
             position: fixed;
             top: calc(20px + env(safe-area-inset-top));
-            left: calc(20px + env(safe-area-inset-left));
+            left: 20px;
             z-index: 1000;
             background: #FAF6F0;
             color: #1B2A4A;
@@ -103,11 +102,7 @@
             color: #FFFFFF;
         }
 
-        /* Esconde o botão voltar quando rodando como PWA (standalone) */
-        @media all and (display-mode: standalone) {
-            .back-button { display: none; }
-        }
-        @media all and (display-mode: fullscreen) {
+        @media (display-mode: standalone) {
             .back-button { display: none; }
         }
 
@@ -120,45 +115,56 @@
             overflow: auto;
         }
 
-        /* ============ Banner de instalação (Android/Desktop) ============ */
+        /* Banner "Instalar app" (Android) */
         .install-banner {
             display: none;
             position: fixed;
             bottom: calc(20px + env(safe-area-inset-bottom));
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 10001;
-            background: #FAF6F0;
-            color: #1B2A4A;
-            padding: 14px 22px;
-            border-radius: 50px;
-            box-shadow: 0 8px 30px rgba(27, 42, 74, 0.3);
-            font-size: 15px;
-            font-weight: 600;
-            max-width: 92vw;
-            animation: slideUp 0.4s ease;
+            left: 20px; right: 20px;
+            z-index: 9998;
+            background: #1B2A4A;
+            color: #FAF6F0;
+            padding: 16px 20px;
+            border-radius: 16px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+            align-items: center;
+            gap: 14px;
         }
-        .install-banner.show { display: flex; align-items: center; gap: 14px; }
-        .install-banner .dismiss {
-            background: transparent;
-            color: #7A7A7A;
-            border: none;
-            font-size: 22px;
-            line-height: 1;
-            cursor: pointer;
-            padding: 0 2px;
+        .install-banner.show { display: flex; }
+        .install-banner img {
+            width: 48px; height: 48px;
+            border-radius: 12px;
+            flex-shrink: 0;
         }
-        .install-banner .install-btn {
+        .install-banner .text {
+            flex: 1;
+            font-size: 0.92rem;
+            line-height: 1.3;
+        }
+        .install-banner .text strong { display: block; margin-bottom: 2px; }
+        .install-banner .btn {
             background: #C8963E;
             color: #FFFFFF;
             border: none;
-            padding: 8px 18px;
-            border-radius: 50px;
+            padding: 10px 18px;
+            border-radius: 20px;
+            font-size: 0.88rem;
             font-weight: 600;
-            font-size: 14px;
             cursor: pointer;
+            flex-shrink: 0;
         }
-        .install-banner .install-btn:hover { background: #E8C87A; color: #1B2A4A; }
+        .install-banner .close {
+            background: transparent;
+            color: #FAF6F0;
+            border: none;
+            font-size: 1.4rem;
+            cursor: pointer;
+            padding: 4px 8px;
+            opacity: 0.6;
+        }
+        @media (display-mode: standalone) {
+            .install-banner { display: none !important; }
+        }
 
         /* Banner LGPD */
         .lgpd-banner {
@@ -169,7 +175,8 @@
             background: rgba(27, 42, 74, 0.97);
             backdrop-filter: blur(10px);
             color: #FAF6F0;
-            padding: calc(20px + env(safe-area-inset-bottom)) 20px 20px;
+            padding: 20px;
+            padding-bottom: calc(20px + env(safe-area-inset-bottom));
             box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
             animation: slideUp 0.4s ease;
         }
@@ -177,8 +184,8 @@
         .lgpd-banner.show { display: block; }
 
         @keyframes slideUp {
-            from { transform: translate(-50%, 100%); opacity: 0; }
-            to { transform: translate(-50%, 0); opacity: 1; }
+            from { transform: translateY(100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
         }
 
         .lgpd-content {
@@ -266,7 +273,7 @@
         <div class="loading-text">Carregando Catálogo da Comunidade...</div>
     </div>
 
-    <!-- Botão Voltar (só no navegador, não no PWA instalado) -->
+    <!-- Botão Voltar (não aparece em modo standalone/instalado) -->
     <a href="index.html" class="back-button">← Voltar ao Menu</a>
 
     <!-- iFrame Principal -->
@@ -278,11 +285,15 @@
         loading="eager"
     ></iframe>
 
-    <!-- Banner de instalação (Android/Chrome desktop) -->
+    <!-- Banner Instalar (Android/desktop) -->
     <div class="install-banner" id="installBanner">
-        <span>📲 Instalar na tela inicial</span>
-        <button class="install-btn" id="installBtn">Instalar</button>
-        <button class="dismiss" id="installDismiss" aria-label="Fechar">×</button>
+        <img src="icon-192.png" alt="">
+        <div class="text">
+            <strong>Instale o Catálogo</strong>
+            Abra direto da tela inicial, sem navegador
+        </div>
+        <button class="btn" id="installBtn">Instalar</button>
+        <button class="close" id="installClose" aria-label="Fechar">×</button>
     </div>
 
     <!-- Banner LGPD -->
@@ -299,6 +310,45 @@
         </div>
     </div>
 
+    <!-- ========== OneSignal Web SDK v16 ========== -->
+    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+    <script>
+        // CONFIGURAÇÃO: troque ONESIGNAL_APP_ID pelo valor do painel.
+        // Veja README_PUSH.md, passo 2.
+        window.ONESIGNAL_APP_ID = 'COLE-AQUI-O-APP-ID-DO-ONESIGNAL';
+
+        window.OneSignalDeferred = window.OneSignalDeferred || [];
+        OneSignalDeferred.push(async function (OneSignal) {
+            if (!window.ONESIGNAL_APP_ID || window.ONESIGNAL_APP_ID.indexOf('COLE-AQUI') === 0) {
+                console.warn('[Push] OneSignal App ID não configurado. Notificações desabilitadas.');
+                return;
+            }
+            await OneSignal.init({
+                appId: window.ONESIGNAL_APP_ID,
+                serviceWorkerPath: 'sw.js',
+                serviceWorkerParam: { scope: './' },
+                allowLocalhostAsSecureOrigin: true,
+                promptOptions: {
+                    slidedown: {
+                        prompts: [{
+                            type: 'push',
+                            autoPrompt: true,
+                            text: {
+                                actionMessage: 'Quer receber avisos de novos comércios e promoções da comunidade?',
+                                acceptButton: 'Sim, quero',
+                                cancelButton: 'Agora não'
+                            },
+                            delay: { pageViews: 1, timeDelay: 8 } // aparece após 8s
+                        }]
+                    }
+                }
+            });
+
+            // Tag do usuário (útil para segmentar no painel)
+            OneSignal.User.addTag('origem', 'catalogo_pwa');
+        });
+    </script>
+
     <script>
         // ========== LOADING ==========
         var iframe = document.getElementById('appFrame');
@@ -312,57 +362,55 @@
             if (!loading.classList.contains('hide')) loading.classList.add('hide');
         }, 10000);
 
-        // ========== SERVICE WORKER (PWA) ==========
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', function() {
-                navigator.serviceWorker.register('sw.js')
-                    .then(function(reg) {
-                        console.log('[PWA] Service Worker registrado. Escopo:', reg.scope);
-                    })
-                    .catch(function(err) {
-                        console.warn('[PWA] Falha ao registrar Service Worker:', err);
-                    });
-            });
-        }
+        // ========== SERVICE WORKER (registrado pelo OneSignal) ==========
+        // OBS: NÃO registramos sw.js manualmente aqui — o OneSignal.init() já
+        // registra o mesmo sw.js com o scope './'. Registrar duas vezes causa
+        // conflito e o push não funciona.
 
-        // ========== INSTALL PROMPT (Android/Chrome) ==========
-        var deferredPrompt = null;
+        // ========== INSTALL BANNER (Android / desktop) ==========
+        var installPromptEvent = null;
         var installBanner = document.getElementById('installBanner');
-        var installBtn = document.getElementById('installBtn');
-        var installDismiss = document.getElementById('installDismiss');
-        var INSTALL_DISMISSED_KEY = 'ecc_install_dismissed';
+        var INSTALL_KEY = 'ecc_install_dismissed_at';
+
+        function shouldShowInstall() {
+            var last = null;
+            try { last = localStorage.getItem(INSTALL_KEY); } catch(e) {}
+            if (!last) return true;
+            // cooldown de 7 dias
+            var daysAgo = (Date.now() - parseInt(last, 10)) / 86400000;
+            return daysAgo > 7;
+        }
 
         window.addEventListener('beforeinstallprompt', function(e) {
             e.preventDefault();
-            deferredPrompt = e;
-            // Só mostra se o usuário não fechou recentemente
-            try {
-                var dismissed = localStorage.getItem(INSTALL_DISMISSED_KEY);
-                var now = Date.now();
-                if (dismissed && (now - parseInt(dismissed, 10) < 7 * 24 * 3600 * 1000)) return;
-            } catch(err) {}
-            setTimeout(function() {
-                installBanner.classList.add('show');
-            }, 3000);
+            installPromptEvent = e;
+            if (shouldShowInstall()) {
+                setTimeout(function() {
+                    installBanner.classList.add('show');
+                }, 3000);
+            }
         });
 
-        installBtn.addEventListener('click', function() {
-            if (!deferredPrompt) return;
-            deferredPrompt.prompt();
-            deferredPrompt.userChoice.then(function() {
-                deferredPrompt = null;
-                installBanner.classList.remove('show');
-            });
-        });
-
-        installDismiss.addEventListener('click', function() {
+        document.getElementById('installBtn').addEventListener('click', async function() {
+            if (!installPromptEvent) return;
             installBanner.classList.remove('show');
-            try { localStorage.setItem(INSTALL_DISMISSED_KEY, String(Date.now())); } catch(err) {}
+            installPromptEvent.prompt();
+            var result = await installPromptEvent.userChoice;
+            if (result.outcome === 'accepted') {
+                console.log('[PWA] Usuário instalou o app.');
+            }
+            installPromptEvent = null;
+            try { localStorage.setItem(INSTALL_KEY, Date.now().toString()); } catch(e) {}
+        });
+
+        document.getElementById('installClose').addEventListener('click', function() {
+            installBanner.classList.remove('show');
+            try { localStorage.setItem(INSTALL_KEY, Date.now().toString()); } catch(e) {}
         });
 
         window.addEventListener('appinstalled', function() {
-            console.log('[PWA] App instalado com sucesso.');
             installBanner.classList.remove('show');
+            console.log('[PWA] Instalação concluída.');
         });
 
         // ========== LGPD + ANALYTICS ==========
