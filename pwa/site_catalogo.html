@@ -402,9 +402,10 @@
             try {
                 await OneSignal.init({
                     appId: window.ONESIGNAL_APP_ID,
-                    serviceWorkerPath: 'sw.js',
-                    serviceWorkerParam: { scope: './' },
                     allowLocalhostAsSecureOrigin: true
+                    // SW: OneSignal v16 em "Typical Site" busca
+                    // OneSignalSDKWorker.js na raiz do site. Não tente
+                    // customizar via serviceWorkerPath aqui — não é honrado.
                 });
                 console.log('[Push] OneSignal inicializado.');
             } catch (e) {
