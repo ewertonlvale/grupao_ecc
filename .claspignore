@@ -1,0 +1,15 @@
+# Arquivos do site (GitHub Pages) que NAO devem ir para o Apps Script
+_gas/**
+pwa/**
+scripts/**
+styles/**
+OneSignalSDKWorker.js
+CNAME
+README.md
+SETUP.md
+.gitignore
+.claspignore
+favicon.ico
+favicon.png
+logo_ecc.png
+.git/**

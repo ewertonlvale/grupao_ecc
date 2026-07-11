@@ -202,7 +202,7 @@ function _mapGrupoRecord(r) {
     cor: r.x_studio_cor || '',
     descricao: r.x_studio_descricao || '',
     ordem: r.x_studio_ordem || 0,
-    ativo: !!r.x_studio_ativo
+    ativo: !!r.x_active
   };
 }
 
@@ -214,7 +214,7 @@ function _mapCategoriaRecord(r) {
     grupoId: _many2oneId(r.x_studio_grupo_id),
     grupoNome: _many2oneNome(r.x_studio_grupo_id),
     ordem: r.x_studio_ordem || 0,
-    ativo: !!r.x_studio_ativo
+    ativo: !!r.x_active
   };
 }
 
@@ -265,8 +265,8 @@ function buscarGruposCatalogo() {
   var grupos = odooSearchRead(
     ODOO_MODELS.CATALOGO_GRUPO,
     ['id', 'x_name', 'x_studio_icone', 'x_studio_cor',
-     'x_studio_descricao', 'x_studio_ordem', 'x_studio_ativo'],
-    [['x_studio_ativo', '=', true]],
+     'x_studio_descricao', 'x_studio_ordem', 'x_active'],
+    [['x_active', '=', true]],
     { order: 'x_studio_ordem asc, x_name asc', limit: 100 }
   ).map(_mapGrupoRecord);
 
@@ -285,8 +285,8 @@ function buscarCategoriasCatalogo() {
   var categorias = odooSearchRead(
     ODOO_MODELS.CATALOGO_CATEGORIA,
     ['id', 'x_name', 'x_studio_icone', 'x_studio_grupo_id',
-     'x_studio_ordem', 'x_studio_ativo'],
-    [['x_studio_ativo', '=', true]],
+     'x_studio_ordem', 'x_active'],
+    [['x_active', '=', true]],
     { order: 'x_studio_ordem asc, x_name asc', limit: 500 }
   ).map(_mapCategoriaRecord);
 
@@ -483,7 +483,7 @@ function _executarSeed() {
       x_studio_icone: gData.icone || '',
       x_studio_cor: gData.cor || '',
       x_studio_ordem: gData.ordem || 0,
-      x_studio_ativo: true
+      x_active: true
     });
     gruposCriados++;
     log('✅ Grupo criado: ' + gData.grupo + ' (id=' + grupoId + ')');
@@ -494,7 +494,7 @@ function _executarSeed() {
         x_studio_icone: cData.icone || gData.icone || '',
         x_studio_grupo_id: grupoId,
         x_studio_ordem: idx + 1,
-        x_studio_ativo: true
+        x_active: true
       });
       categoriasCriadas++;
     });

@@ -7,84 +7,241 @@
   <title>Catálogo de Serviços e Comércios — Paróquia N. S. da Conceição Aparecida</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Source+Sans+3:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Amatic+SC:wght@400;700&family=Caveat:wght@500;700&family=Source+Sans+3:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      --gold: #C8963E;
-      --gold-light: #E8C87A;
-      --gold-glow: rgba(200, 150, 62, 0.15);
-      --blue-deep: #1B2A4A;
-      --blue-mid: #2C3E6B;
-      --blue-soft: #3D5289;
-      --cream: #FAF6F0;
-      --cream-dark: #EDE6D8;
+      /* Paleta feijoada — nomes antigos preservados para não quebrar CSS existente.
+         "gold"       → amarelo-sol festivo  |  "blue-deep"  → vermelho terra profundo
+         "cream"      → bege pergaminho     |  "blue-mid"   → vermelho terra
+                                               "blue-soft"  → vermelho claro           */
+      --gold: #E8B84E;
+      --gold-light: #F4D06F;
+      --gold-dark: #C89938;
+      --gold-glow: rgba(232, 184, 78, 0.18);
+      --blue-deep: #6B1F1F;     /* vermelho profundo */
+      --blue-mid:  #8B2E2E;     /* vermelho terra */
+      --blue-soft: #A8413B;     /* vermelho claro */
+      --red-deep:  #5A1616;
+      --brown:     #6B3E2E;
+      --brown-light:#8B5E3E;
+      --cream:     #F5E6D3;     /* bege pergaminho */
+      --cream-dark:#E8D4B8;
+      --cream-light:#FBF3E5;
+      --paper:     #FFF8EA;
       --white: #FFFFFF;
-      --text-dark: #1A1A1A;
-      --text-mid: #4A4A4A;
-      --text-light: #7A7A7A;
+      --text-dark: #2B1A12;
+      --text-mid:  #5C4A3E;
+      --text-light:#8C7A6E;
       --green-whatsapp: #25D366;
       --pink-instagram: #E1306C;
-      --shadow-soft: 0 2px 16px rgba(27, 42, 74, 0.08);
-      --shadow-hover: 0 8px 32px rgba(27, 42, 74, 0.14);
-      --radius: 12px;
+      --shadow-soft: 0 2px 18px rgba(91, 22, 22, 0.09);
+      --shadow-hover: 0 8px 32px rgba(91, 22, 22, 0.18);
+      --radius: 14px;
     }
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       font-family: 'Source Sans 3', sans-serif;
-      background: var(--cream);
+      background:
+        radial-gradient(circle at 5% 0%, rgba(232, 184, 78, 0.08) 0%, transparent 30%),
+        radial-gradient(circle at 95% 10%, rgba(139, 46, 46, 0.05) 0%, transparent 35%),
+        var(--cream);
       color: var(--text-dark);
       min-height: 100vh;
     }
     /* ── HEADER ── */
     .header {
-      background: linear-gradient(135deg, var(--blue-deep) 0%, var(--blue-mid) 60%, var(--blue-soft) 100%);
+      background:
+        radial-gradient(ellipse at 20% 20%, rgba(232, 184, 78, 0.18) 0%, transparent 55%),
+        radial-gradient(ellipse at 80% 90%, rgba(90, 22, 22, 0.30) 0%, transparent 55%),
+        linear-gradient(135deg, var(--blue-mid) 0%, var(--blue-deep) 60%, var(--red-deep) 100%);
       padding: 2.5rem 1.5rem 3.5rem;
       text-align: center;
       position: relative;
       overflow: hidden;
+      border-bottom: 4px solid var(--gold);
     }
     .header::before {
       content: '';
       position: absolute;
-      top: -60%;
+      top: -20%;
       left: -20%;
       width: 140%;
       height: 220%;
-      background: radial-gradient(ellipse, rgba(200, 150, 62, 0.07) 0%, transparent 70%);
+      background:
+        repeating-linear-gradient(45deg,
+          rgba(255,248,234,0.02) 0px,
+          rgba(255,248,234,0.02) 10px,
+          transparent 10px, transparent 22px);
       pointer-events: none;
     }
     .header-badge {
       display: inline-flex;
       align-items: center;
       gap: 0.5rem;
-      background: rgba(255,255,255,0.08);
-      border: 1px solid rgba(200, 150, 62, 0.25);
+      background: rgba(255,248,234,0.08);
+      border: 1px solid rgba(232, 184, 78, 0.4);
       border-radius: 50px;
       padding: 0.4rem 1.2rem;
       margin-bottom: 1.2rem;
-      font-size: 0.8rem;
+      font-size: 0.78rem;
       color: var(--gold-light);
       letter-spacing: 1.5px;
       text-transform: uppercase;
-      font-weight: 500;
+      font-weight: 600;
       backdrop-filter: blur(4px);
+      position: relative; z-index: 2;
     }
     .header-badge .cross { font-size: 1rem; }
     .header h1 {
       font-family: 'Playfair Display', serif;
       font-weight: 700;
-      font-size: clamp(1.6rem, 4.5vw, 2.4rem);
-      color: var(--white);
+      font-size: clamp(1.7rem, 4.6vw, 2.5rem);
+      color: var(--paper);
       margin-bottom: 0.5rem;
-      position: relative;
+      position: relative; z-index: 2;
     }
     .header p {
-      color: rgba(255,255,255,0.6);
-      font-weight: 300;
+      color: rgba(255, 248, 234, 0.75);
+      font-weight: 400;
       font-size: 1rem;
       max-width: 500px;
       margin: 0 auto;
       line-height: 1.5;
+      position: relative; z-index: 2;
+    }
+    .header-actions {
+      margin-top: 1.2rem;
+      display: inline-flex;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+      justify-content: center;
+      position: relative; z-index: 2;
+    }
+    .header-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.55rem 1.2rem;
+      border-radius: 50px;
+      font-weight: 600;
+      font-size: 0.88rem;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      border: 1.5px solid transparent;
+    }
+    .header-btn.primary {
+      background: var(--gold);
+      color: var(--red-deep);
+    }
+    .header-btn.primary:hover {
+      background: var(--gold-light);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 18px rgba(232, 184, 78, 0.35);
+    }
+    .header-btn.ghost {
+      background: transparent;
+      color: var(--gold-light);
+      border-color: rgba(232, 184, 78, 0.45);
+    }
+    .header-btn.ghost:hover {
+      background: rgba(232, 184, 78, 0.12);
+      color: var(--gold-light);
+    }
+
+    /* ── FAIXA DECORATIVA (bandeirinhas) ── */
+    .banner-faixa {
+      height: 14px;
+      background:
+        repeating-linear-gradient(135deg,
+          var(--gold) 0, var(--gold) 10px,
+          var(--blue-mid) 10px, var(--blue-mid) 20px,
+          var(--brown-light) 20px, var(--brown-light) 30px,
+          var(--cream-dark) 30px, var(--cream-dark) 40px);
+      opacity: 0.9;
+    }
+
+    /* ── BANNER DO EVENTO (feijoada) ── */
+    .event-ribbon {
+      max-width: 1100px;
+      margin: 1.5rem auto 0;
+      padding: 0 1.5rem;
+    }
+    .event-ribbon-inner {
+      display: flex;
+      align-items: center;
+      gap: 1.2rem;
+      background:
+        linear-gradient(135deg, var(--blue-mid) 0%, var(--blue-deep) 100%);
+      color: var(--paper);
+      border-radius: var(--radius);
+      padding: 1.1rem 1.4rem;
+      box-shadow: var(--shadow-soft);
+      border: 2px solid var(--gold);
+      position: relative;
+      overflow: hidden;
+    }
+    .event-ribbon-inner::before {
+      content: '';
+      position: absolute;
+      top: 0; right: 0; bottom: 0;
+      width: 180px;
+      background:
+        radial-gradient(circle at 100% 50%, rgba(232, 184, 78, 0.25) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .event-icon {
+      flex-shrink: 0;
+      width: 56px; height: 56px;
+      border-radius: 50%;
+      background: var(--gold);
+      color: var(--red-deep);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.7rem;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.18);
+    }
+    .event-text { flex: 1; min-width: 0; position: relative; z-index: 2; }
+    .event-eyebrow {
+      font-family: 'Caveat', cursive;
+      font-size: 1.05rem;
+      color: var(--gold-light);
+      line-height: 1.2;
+      margin-bottom: 0.15rem;
+    }
+    .event-title {
+      font-family: 'Amatic SC', cursive;
+      font-size: clamp(1.4rem, 3vw, 1.8rem);
+      font-weight: 700;
+      line-height: 1.1;
+      letter-spacing: 1px;
+      color: var(--paper);
+    }
+    .event-title .accent { color: var(--gold); }
+    .event-meta {
+      font-size: 0.85rem;
+      color: rgba(255, 248, 234, 0.78);
+      margin-top: 0.2rem;
+    }
+    .event-cta {
+      flex-shrink: 0;
+      padding: 0.55rem 1.15rem;
+      border-radius: 50px;
+      background: var(--gold);
+      color: var(--red-deep);
+      font-weight: 700;
+      font-size: 0.85rem;
+      text-decoration: none;
+      white-space: nowrap;
+      transition: all 0.2s ease;
+      position: relative; z-index: 2;
+    }
+    .event-cta:hover {
+      background: var(--gold-light);
+      transform: translateY(-2px);
+      box-shadow: 0 5px 14px rgba(232, 184, 78, 0.45);
+    }
+    @media (max-width: 680px) {
+      .event-ribbon-inner { flex-direction: column; text-align: center; padding: 1.25rem 1rem; }
+      .event-cta { width: 100%; text-align: center; }
     }
 
     /* ── SEARCH & FILTERS ── */
@@ -199,8 +356,8 @@
       text-transform: uppercase; letter-spacing: 1px;
       padding: 0.2rem 0.6rem; border-radius: 4px; margin-top: 0.3rem;
     }
-    .tipo-comercio { background: rgba(200, 150, 62, 0.12); color: var(--gold); }
-    .tipo-servico  { background: rgba(27, 42, 74, 0.08); color: var(--blue-mid); }
+    .tipo-comercio { background: rgba(232, 184, 78, 0.18); color: var(--gold-dark); }
+    .tipo-servico  { background: rgba(107, 62, 46, 0.12);  color: var(--brown); }
     .card-body { padding: 0 1.25rem; flex: 1; }
     .card-descricao {
       font-size: 0.9rem; color: var(--text-mid);
@@ -229,8 +386,8 @@
     .btn-contato svg { width: 16px; height: 16px; }
     .btn-whatsapp  { background: var(--green-whatsapp); color: var(--white); }
     .btn-whatsapp:hover  { background: #1EBE57; transform: scale(1.03); }
-    .btn-telefone  { background: var(--blue-deep); color: var(--white); }
-    .btn-telefone:hover  { background: var(--blue-mid); transform: scale(1.03); }
+    .btn-telefone  { background: var(--blue-mid); color: var(--white); }
+    .btn-telefone:hover  { background: var(--blue-deep); transform: scale(1.03); }
     .btn-instagram { background: var(--pink-instagram); color: var(--white); }
     .btn-instagram:hover { background: #C72B5C; transform: scale(1.03); }
 
@@ -419,6 +576,31 @@
     </div>
     <h1>Catálogo da Comunidade</h1>
     <p>Conheça os serviços e comércios dos nossos paroquianos. Apoie quem está perto de você!</p>
+    <div class="header-actions">
+      <a class="header-btn primary" href="patrocinadores.html">
+        🫘 Patrocinadores da Feijoada
+      </a>
+    </div>
+  </div>
+
+  <!-- Faixa decorativa -->
+  <div class="banner-faixa" aria-hidden="true"></div>
+
+  <!-- Banner do evento "Feijoada das Famílias" -->
+  <div class="event-ribbon" id="eventRibbon">
+    <div class="event-ribbon-inner">
+      <div class="event-icon" aria-hidden="true">🫘</div>
+      <div class="event-text">
+        <div class="event-eyebrow">— em breve na comunidade —</div>
+        <div class="event-title">
+          Feijoada <span class="accent">&amp;</span> Forró das Famílias
+        </div>
+        <div class="event-meta">
+          17/mai/2026 · 11h · Quadra Renascença I
+        </div>
+      </div>
+      <a class="event-cta" href="patrocinadores.html">Seja patrocinador →</a>
+    </div>
   </div>
 
   <!-- DESTAQUES CAROUSEL -->

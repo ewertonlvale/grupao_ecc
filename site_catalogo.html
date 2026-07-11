@@ -2,15 +2,23 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
+
+    <!-- PWA essentials -->
+    <meta name="theme-color" content="#1B2A4A">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <title>Catálogo da Comunidade - ECC</title>
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Catálogo ECC">
+    <meta name="application-name" content="Catálogo ECC">
 
-    <!-- Favicon -->
+    <title>Catálogo da Comunidade — ECC</title>
+
+    <!-- Manifest + Ícones -->
+    <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" href="favicon.png">
     <link rel="shortcut icon" type="image/png" href="favicon.png">
-    <link rel="apple-touch-icon" href="favicon.png">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
 
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -21,7 +29,14 @@
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
         }
 
-        /* Loading Spinner (paleta do Catálogo: azul profundo + dourado) */
+        /* Safe-area iOS (notch) */
+        body {
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
+            background: #1B2A4A;
+        }
+
+        /* Loading Spinner */
         #loading {
             position: fixed;
             top: 0; left: 0;
@@ -58,10 +73,11 @@
             letter-spacing: 0.5px;
         }
 
-        /* Botão Voltar */
+        /* Botão Voltar (some em modo standalone) */
         .back-button {
             position: fixed;
-            top: 20px; left: 20px;
+            top: calc(20px + env(safe-area-inset-top));
+            left: 20px;
             z-index: 1000;
             background: #FAF6F0;
             color: #1B2A4A;
@@ -86,6 +102,10 @@
             color: #FFFFFF;
         }
 
+        @media (display-mode: standalone) {
+            .back-button { display: none; }
+        }
+
         /* iFrame */
         #appFrame {
             width: 100%; height: 100%;
@@ -93,6 +113,90 @@
             display: block;
             -webkit-overflow-scrolling: touch;
             overflow: auto;
+        }
+
+        /* Banner "Instalar app" (Android) */
+        .install-banner {
+            display: none;
+            position: fixed;
+            bottom: calc(20px + env(safe-area-inset-bottom));
+            left: 20px; right: 20px;
+            z-index: 9998;
+            background: #1B2A4A;
+            color: #FAF6F0;
+            padding: 16px 20px;
+            border-radius: 16px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+            align-items: center;
+            gap: 14px;
+        }
+        .install-banner.show { display: flex; }
+        .install-banner img {
+            width: 48px; height: 48px;
+            border-radius: 12px;
+            flex-shrink: 0;
+        }
+        .install-banner .text {
+            flex: 1;
+            font-size: 0.92rem;
+            line-height: 1.3;
+        }
+        .install-banner .text strong { display: block; margin-bottom: 2px; }
+        .install-banner .btn {
+            background: #C8963E;
+            color: #FFFFFF;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 20px;
+            font-size: 0.88rem;
+            font-weight: 600;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        .install-banner .close {
+            background: transparent;
+            color: #FAF6F0;
+            border: none;
+            font-size: 1.4rem;
+            cursor: pointer;
+            padding: 4px 8px;
+            opacity: 0.6;
+        }
+        @media (display-mode: standalone) {
+            .install-banner { display: none !important; }
+        }
+
+        /* Botão flutuante "Quer receber avisos?" */
+        .push-cta {
+            display: none; /* ligado via .show só quando faz sentido */
+            position: fixed;
+            bottom: calc(20px + env(safe-area-inset-bottom));
+            right: 20px;
+            z-index: 9997;
+            background: #C8963E;
+            color: #FFFFFF;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 50px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 6px 20px rgba(27, 42, 74, 0.35);
+            transition: all 0.25s ease;
+            font-family: inherit;
+            align-items: center;
+            gap: 8px;
+        }
+        .push-cta.show { display: inline-flex; }
+        .push-cta:hover {
+            background: #E8C87A;
+            color: #1B2A4A;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(27, 42, 74, 0.45);
+        }
+        .push-cta:disabled {
+            opacity: 0.6;
+            cursor: wait;
         }
 
         /* Banner LGPD */
@@ -105,6 +209,7 @@
             backdrop-filter: blur(10px);
             color: #FAF6F0;
             padding: 20px;
+            padding-bottom: calc(20px + env(safe-area-inset-bottom));
             box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
             animation: slideUp 0.4s ease;
         }
@@ -201,7 +306,7 @@
         <div class="loading-text">Carregando Catálogo da Comunidade...</div>
     </div>
 
-    <!-- Botão Voltar -->
+    <!-- Botão Voltar (não aparece em modo standalone/instalado) -->
     <a href="index.html" class="back-button">← Voltar ao Menu</a>
 
     <!-- iFrame Principal -->
@@ -212,6 +317,23 @@
         allowfullscreen
         loading="eager"
     ></iframe>
+
+    <!-- Botão flutuante de push (visível por padrão, escondido quando já inscrito/não suportado) -->
+    <button class="push-cta show" id="pushCta" type="button">
+        <span aria-hidden="true">🔔</span>
+        <span>Quer receber avisos?</span>
+    </button>
+
+    <!-- Banner Instalar (Android/desktop) -->
+    <div class="install-banner" id="installBanner">
+        <img src="icon-192.png" alt="">
+        <div class="text">
+            <strong>Instale o Catálogo</strong>
+            Abra direto da tela inicial, sem navegador
+        </div>
+        <button class="btn" id="installBtn">Instalar</button>
+        <button class="close" id="installClose" aria-label="Fechar">×</button>
+    </div>
 
     <!-- Banner LGPD -->
     <div class="lgpd-banner" id="lgpdBanner">
@@ -227,6 +349,137 @@
         </div>
     </div>
 
+    <!-- ========== OneSignal Web SDK v16 ========== -->
+    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+    <script>
+        // CONFIGURAÇÃO: troque ONESIGNAL_APP_ID pelo valor do painel.
+        // Veja README_PUSH.md, passo 2.
+        window.ONESIGNAL_APP_ID = 'c32ec6d9-f2c7-45ee-8278-6c50b7ed10f2';
+
+        // ================================================
+        // Push flow — botão "Quer receber avisos?"
+        // ================================================
+        // Estratégia: o botão começa VISÍVEL (classe .show no HTML).
+        // Só escondemos depois de confirmar que não faz sentido mostrar.
+        // Assim, se o SDK do OneSignal falhar em carregar, ou o App ID
+        // estiver errado, o botão ainda aparece — e clicar nele cai no
+        // fluxo nativo do browser via Notification.requestPermission().
+
+        const pushCta = document.getElementById('pushCta');
+
+        function esconderCta(motivo) {
+            console.log('[Push] Escondendo botão:', motivo);
+            pushCta.classList.remove('show');
+        }
+
+        function mostrarCta(motivo) {
+            console.log('[Push] Mostrando botão:', motivo);
+            pushCta.classList.add('show');
+        }
+
+        // Se o navegador nem tem API de push, esconde já.
+        if (!('Notification' in window) || !('serviceWorker' in navigator)) {
+            esconderCta('navegador sem API de push/SW');
+        } else if (Notification.permission === 'denied') {
+            esconderCta('usuário bloqueou no browser');
+        } else if (Notification.permission === 'granted') {
+            // Já deu permissão antes — OneSignal provavelmente já tem a sub.
+            // Vamos confirmar via SDK quando ele carregar (abaixo).
+        }
+
+        window.OneSignalDeferred = window.OneSignalDeferred || [];
+        OneSignalDeferred.push(async function (OneSignal) {
+            const configurado = window.ONESIGNAL_APP_ID &&
+                                window.ONESIGNAL_APP_ID.indexOf('COLE-AQUI') !== 0;
+
+            if (!configurado) {
+                console.warn('[Push] OneSignal App ID não configurado. ' +
+                             'O botão ainda aparece, mas clicar só pede permissão nativa.');
+                // NÃO return aqui — deixa o botão no fluxo nativo abaixo.
+                return;
+            }
+
+            try {
+                await OneSignal.init({
+                    appId: window.ONESIGNAL_APP_ID,
+                    allowLocalhostAsSecureOrigin: true
+                    // SW: OneSignal v16 em "Typical Site" busca
+                    // OneSignalSDKWorker.js na raiz do site. Não tente
+                    // customizar via serviceWorkerPath aqui — não é honrado.
+                });
+                console.log('[Push] OneSignal inicializado.');
+            } catch (e) {
+                console.error('[Push] Falha no init do OneSignal:', e);
+                return;
+            }
+
+            // Descobrir estado atual
+            function jaInscrito() {
+                try {
+                    return OneSignal.User &&
+                           OneSignal.User.PushSubscription &&
+                           OneSignal.User.PushSubscription.optedIn === true;
+                } catch (e) { return false; }
+            }
+
+            function atualizarVisibilidadeCta() {
+                try {
+                    if (jaInscrito()) { esconderCta('já inscrito'); return; }
+                    if (Notification.permission === 'denied') {
+                        esconderCta('permissão negada'); return;
+                    }
+                    mostrarCta('estado: default/não inscrito');
+                } catch (e) {
+                    console.warn('[Push] Erro ao checar estado, mantendo botão visível:', e);
+                }
+            }
+
+            atualizarVisibilidadeCta();
+
+            // Reagir em tempo real a mudanças
+            try {
+                OneSignal.User.PushSubscription.addEventListener('change', atualizarVisibilidadeCta);
+            } catch (e) { /* API pode variar entre versões do SDK */ }
+
+            try {
+                OneSignal.Notifications.addEventListener('permissionChange', atualizarVisibilidadeCta);
+            } catch (e) { /* idem */ }
+
+            // Tag para segmentação (só se inscrito)
+            if (jaInscrito()) {
+                try { OneSignal.User.addTag('origem', 'catalogo_pwa'); } catch(e) {}
+            }
+        });
+
+        // Handler do clique — independente do OneSignal ter carregado ou não.
+        // Se o SDK estiver pronto e configurado, ele captura a subscription.
+        // Se não, pelo menos pede a permissão nativa (e o SDK pega depois).
+        pushCta.addEventListener('click', async function() {
+            pushCta.disabled = true;
+            try {
+                if (window.OneSignal && OneSignal.Notifications &&
+                    typeof OneSignal.Notifications.requestPermission === 'function') {
+                    await OneSignal.Notifications.requestPermission();
+                    try { await OneSignal.User.PushSubscription.optIn(); } catch(e) {}
+                    try { OneSignal.User.addTag('origem', 'catalogo_pwa'); } catch(e) {}
+                } else {
+                    // Fallback bruto: pede permissão nativa direto.
+                    const result = await Notification.requestPermission();
+                    console.log('[Push] Permissão nativa:', result);
+                }
+            } catch (e) {
+                console.warn('[Push] Falha ao solicitar permissão:', e);
+            } finally {
+                pushCta.disabled = false;
+                // Reavalia — se concedida, esconde; se negada, também esconde.
+                if (Notification.permission === 'granted' ||
+                    Notification.permission === 'denied') {
+                    esconderCta('pós-click: permission=' + Notification.permission);
+                }
+            }
+        });
+    </script>
+
     <script>
         // ========== LOADING ==========
         var iframe = document.getElementById('appFrame');
@@ -239,6 +492,57 @@
         setTimeout(function() {
             if (!loading.classList.contains('hide')) loading.classList.add('hide');
         }, 10000);
+
+        // ========== SERVICE WORKER (registrado pelo OneSignal) ==========
+        // OBS: NÃO registramos sw.js manualmente aqui — o OneSignal.init() já
+        // registra o mesmo sw.js com o scope './'. Registrar duas vezes causa
+        // conflito e o push não funciona.
+
+        // ========== INSTALL BANNER (Android / desktop) ==========
+        var installPromptEvent = null;
+        var installBanner = document.getElementById('installBanner');
+        var INSTALL_KEY = 'ecc_install_dismissed_at';
+
+        function shouldShowInstall() {
+            var last = null;
+            try { last = localStorage.getItem(INSTALL_KEY); } catch(e) {}
+            if (!last) return true;
+            // cooldown de 7 dias
+            var daysAgo = (Date.now() - parseInt(last, 10)) / 86400000;
+            return daysAgo > 7;
+        }
+
+        window.addEventListener('beforeinstallprompt', function(e) {
+            e.preventDefault();
+            installPromptEvent = e;
+            if (shouldShowInstall()) {
+                setTimeout(function() {
+                    installBanner.classList.add('show');
+                }, 3000);
+            }
+        });
+
+        document.getElementById('installBtn').addEventListener('click', async function() {
+            if (!installPromptEvent) return;
+            installBanner.classList.remove('show');
+            installPromptEvent.prompt();
+            var result = await installPromptEvent.userChoice;
+            if (result.outcome === 'accepted') {
+                console.log('[PWA] Usuário instalou o app.');
+            }
+            installPromptEvent = null;
+            try { localStorage.setItem(INSTALL_KEY, Date.now().toString()); } catch(e) {}
+        });
+
+        document.getElementById('installClose').addEventListener('click', function() {
+            installBanner.classList.remove('show');
+            try { localStorage.setItem(INSTALL_KEY, Date.now().toString()); } catch(e) {}
+        });
+
+        window.addEventListener('appinstalled', function() {
+            installBanner.classList.remove('show');
+            console.log('[PWA] Instalação concluída.');
+        });
 
         // ========== LGPD + ANALYTICS ==========
         var GA_ID = 'G-5VFSZQS0H8';
